@@ -33,18 +33,34 @@ const updateSchema = z.object({
 export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .rpc("get_my_profile")
-      .single();
+    const { data, error } = await (context.supabase.rpc as any)("get_my_profile").single();
     if (error) throw new Error(error.message);
-    return data;
+    return data as {
+      id: string;
+      name: string;
+      email: string;
+      photo_url: string | null;
+      level: number | null;
+      initial_rating: number | null;
+      current_rating: number | null;
+      provisional: boolean;
+      rated_matches: number;
+      wins: number;
+      losses: number;
+      preferred_courts: string[];
+      availability: string[];
+      phone: string | null;
+      bio: string | null;
+      onboarded: boolean;
+      created_at: string;
+    } | null;
   });
 
 export const completeOnboarding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => onboardingSchema.parse(input))
   .handler(async ({ context, data }) => {
-    const { data: row, error } = await context.supabase.rpc("complete_onboarding", {
+    const { data: row, error } = await (context.supabase.rpc as any)("complete_onboarding", {
       _name: data.name,
       _photo_url: data.photo_url ?? null,
       _level: data.level,
@@ -63,10 +79,11 @@ export const updateMyProfile = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { data: row, error } = await context.supabase
       .from("profiles")
-      .update(data)
+      .update(data as never)
       .eq("id", context.userId)
       .select()
       .single();
     if (error) throw new Error(error.message);
     return row;
   });
+
