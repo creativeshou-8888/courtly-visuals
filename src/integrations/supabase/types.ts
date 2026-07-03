@@ -14,16 +14,195 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          availability: string[]
+          bio: string | null
+          created_at: string
+          current_rating: number | null
+          email: string
+          id: string
+          initial_rating: number | null
+          level: number | null
+          losses: number
+          name: string
+          onboarded: boolean
+          phone: string | null
+          photo_url: string | null
+          preferred_courts: string[]
+          provisional: boolean
+          rated_matches: number
+          updated_at: string
+          wins: number
+        }
+        Insert: {
+          availability?: string[]
+          bio?: string | null
+          created_at?: string
+          current_rating?: number | null
+          email?: string
+          id: string
+          initial_rating?: number | null
+          level?: number | null
+          losses?: number
+          name?: string
+          onboarded?: boolean
+          phone?: string | null
+          photo_url?: string | null
+          preferred_courts?: string[]
+          provisional?: boolean
+          rated_matches?: number
+          updated_at?: string
+          wins?: number
+        }
+        Update: {
+          availability?: string[]
+          bio?: string | null
+          created_at?: string
+          current_rating?: number | null
+          email?: string
+          id?: string
+          initial_rating?: number | null
+          level?: number | null
+          losses?: number
+          name?: string
+          onboarded?: boolean
+          phone?: string | null
+          photo_url?: string | null
+          preferred_courts?: string[]
+          provisional?: boolean
+          rated_matches?: number
+          updated_at?: string
+          wins?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          availability: string[] | null
+          bio: string | null
+          created_at: string | null
+          current_rating: number | null
+          id: string | null
+          initial_rating: number | null
+          level: number | null
+          losses: number | null
+          name: string | null
+          onboarded: boolean | null
+          photo_url: string | null
+          preferred_courts: string[] | null
+          provisional: boolean | null
+          rated_matches: number | null
+          wins: number | null
+        }
+        Insert: {
+          availability?: string[] | null
+          bio?: string | null
+          created_at?: string | null
+          current_rating?: number | null
+          id?: string | null
+          initial_rating?: number | null
+          level?: number | null
+          losses?: number | null
+          name?: string | null
+          onboarded?: boolean | null
+          photo_url?: string | null
+          preferred_courts?: string[] | null
+          provisional?: boolean | null
+          rated_matches?: number | null
+          wins?: number | null
+        }
+        Update: {
+          availability?: string[] | null
+          bio?: string | null
+          created_at?: string | null
+          current_rating?: number | null
+          id?: string | null
+          initial_rating?: number | null
+          level?: number | null
+          losses?: number | null
+          name?: string | null
+          onboarded?: boolean | null
+          photo_url?: string | null
+          preferred_courts?: string[] | null
+          provisional?: boolean | null
+          rated_matches?: number | null
+          wins?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      complete_onboarding: {
+        Args: {
+          _availability: string[]
+          _bio: string
+          _level: number
+          _name: string
+          _phone: string
+          _photo_url: string
+          _preferred_courts: string[]
+        }
+        Returns: {
+          availability: string[]
+          bio: string | null
+          created_at: string
+          current_rating: number | null
+          email: string
+          id: string
+          initial_rating: number | null
+          level: number | null
+          losses: number
+          name: string
+          onboarded: boolean
+          phone: string | null
+          photo_url: string | null
+          preferred_courts: string[]
+          provisional: boolean
+          rated_matches: number
+          updated_at: string
+          wins: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "player" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +329,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["player", "admin"],
+    },
   },
 } as const
