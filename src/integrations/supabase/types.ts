@@ -193,6 +193,64 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_my_profile: {
+        Args: never
+        Returns: {
+          availability: string[]
+          bio: string | null
+          created_at: string
+          current_rating: number | null
+          email: string
+          id: string
+          initial_rating: number | null
+          level: number | null
+          losses: number
+          name: string
+          onboarded: boolean
+          phone: string | null
+          photo_url: string | null
+          preferred_courts: string[]
+          provisional: boolean
+          rated_matches: number
+          updated_at: string
+          wins: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      get_profile_with_phone: {
+        Args: { _id: string }
+        Returns: {
+          availability: string[]
+          bio: string | null
+          created_at: string
+          current_rating: number | null
+          email: string
+          id: string
+          initial_rating: number | null
+          level: number | null
+          losses: number
+          name: string
+          onboarded: boolean
+          phone: string | null
+          photo_url: string | null
+          preferred_courts: string[]
+          provisional: boolean
+          rated_matches: number
+          updated_at: string
+          wins: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
