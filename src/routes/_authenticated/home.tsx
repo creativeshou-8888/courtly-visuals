@@ -3,12 +3,12 @@ import { Plus, Check, X, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/PlayerBits";
 import {
-  currentUser,
   openInvites,
   pendingConfirmation,
   recentResults,
   upcomingMatches,
 } from "@/lib/mock-data";
+import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
@@ -32,22 +32,26 @@ function SectionHeader({ title, action }: { title: string; action?: string }) {
 }
 
 function HomePage() {
+  const { data: profile } = useCurrentProfile();
+  const first = profile?.name?.split(" ")[0] || "there";
+  const photo = profile?.photo_url || initialsAvatar(profile?.name || "You");
   return (
     <AppShell>
       {/* Greeting */}
       <div className="mb-6 flex items-center gap-3">
-        <Avatar player={currentUser} size={48} />
+        <img src={photo} alt="" className="h-12 w-12 rounded-full ring-2 ring-background" />
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground">Welcome back</p>
-          <h1 className="truncate font-display text-xl font-bold text-navy">Alex</h1>
+          <h1 className="truncate font-display text-xl font-bold text-navy">{first}</h1>
         </div>
         <div className="ml-auto rounded-2xl bg-navy px-4 py-2 text-right">
           <p className="text-[10px] font-medium uppercase tracking-wider text-court">Rating</p>
           <p className="rating-hero text-2xl leading-none text-primary-foreground">
-            {currentUser.rating}
+            {profile?.current_rating ?? "—"}
           </p>
         </div>
       </div>
+
 
       {/* Pending confirmation */}
       <section className="mb-6">

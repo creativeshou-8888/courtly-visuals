@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ProvisionalBadge } from "@/components/PlayerBits";
-import { currentUser, players } from "@/lib/mock-data";
+import { players } from "@/lib/mock-data";
+import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
   head: () => ({
