@@ -27,7 +27,7 @@ function Landing() {
           <span className="font-display text-xl font-bold tracking-tight text-navy">Courtly</span>
         </div>
         <Link
-          to="/home"
+          to="/auth"
           className="rounded-full border border-border px-4 py-2 text-sm font-medium text-navy hover:bg-secondary"
         >
           Sign in
@@ -53,13 +53,13 @@ function Landing() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                to="/home"
+                to="/auth"
                 className="inline-flex items-center gap-2 rounded-full bg-navy px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-transform active:scale-[0.98]"
               >
                 Join Courtly <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                to="/home"
+                to="/auth"
                 className="inline-flex items-center rounded-full border border-border bg-background px-6 py-3.5 text-sm font-semibold text-navy hover:bg-secondary"
               >
                 Sign in

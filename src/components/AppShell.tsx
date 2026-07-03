@@ -3,10 +3,10 @@ import { Bell, Home, Search, Trophy, User } from "lucide-react";
 import type { ReactNode } from "react";
 
 const navItems = [
-  { to: "/home", label: "Home", icon: Home },
-  { to: "/find", label: "Find", icon: Search },
-  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/players/me", label: "Profile", icon: User },
+  { to: "/home", label: "Home", icon: Home, match: (p: string) => p === "/home" },
+  { to: "/find", label: "Find", icon: Search, match: (p: string) => p === "/find" },
+  { to: "/leaderboard", label: "Leaderboard", icon: Trophy, match: (p: string) => p === "/leaderboard" },
+  { to: "/profile", label: "Profile", icon: User, match: (p: string) => p.startsWith("/profile") || p.startsWith("/players/") },
 ] as const;
 
 function Logo() {
@@ -25,16 +25,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4 md:h-16 md:max-w-5xl md:px-8">
           <Logo />
           <nav className="hidden items-center gap-1 md:flex">
             {navItems.map((item) => {
-              const active =
-                item.to === "/players/me"
-                  ? pathname.startsWith("/players/")
-                  : pathname === item.to;
+              const active = item.match(pathname);
               return (
                 <Link
                   key={item.to}
@@ -64,14 +60,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      {/* Bottom nav (mobile) */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-background/95 backdrop-blur md:hidden">
         <ul className="mx-auto flex max-w-3xl items-stretch justify-around px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
           {navItems.map((item) => {
-            const active =
-              item.to === "/players/me"
-                ? pathname.startsWith("/players/")
-                : pathname === item.to;
+            const active = item.match(pathname);
             const Icon = item.icon;
             return (
               <li key={item.to} className="flex-1">

@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ProvisionalBadge } from "@/components/PlayerBits";
-import { currentUser, players } from "@/lib/mock-data";
+import { players } from "@/lib/mock-data";
+import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 
-export const Route = createFileRoute("/leaderboard")({
+export const Route = createFileRoute("/_authenticated/leaderboard")({
   head: () => ({
     meta: [
       { title: "Leaderboard · Courtly" },
@@ -16,8 +17,10 @@ export const Route = createFileRoute("/leaderboard")({
 
 function LeaderboardPage() {
   const [tab, setTab] = useState<"all" | "month">("all");
+  const { data: profile } = useCurrentProfile();
   const ranked = [...players].sort((a, b) => b.rating - a.rating);
-  const myRank = 6; // pretend
+  const myRank = 6; // placeholder
+  const photo = profile?.photo_url || initialsAvatar(profile?.name || "You");
 
   return (
     <AppShell>
@@ -52,16 +55,20 @@ function LeaderboardPage() {
           <span className="grid h-9 w-9 place-items-center rounded-full bg-court text-navy font-display font-bold">
             #{myRank}
           </span>
-          <img src={currentUser.photo} alt="" className="h-10 w-10 rounded-full" />
+          <img src={photo} alt="" className="h-10 w-10 rounded-full" />
           <div className="min-w-0">
             <p className="truncate font-semibold">You</p>
             <p className="truncate text-xs text-primary-foreground/70">
-              {currentUser.wins}W · {currentUser.losses}L · +{currentUser.ratingChange} this week
+              {profile?.wins ?? 0}W · {profile?.losses ?? 0}L
+              {profile?.provisional ? " · Provisional" : ""}
             </p>
           </div>
-          <span className="rating-hero text-2xl text-court">{currentUser.rating}</span>
+          <span className="rating-hero text-2xl text-court">
+            {profile?.current_rating ?? "—"}
+          </span>
         </div>
       </div>
+
 
       {/* Ranked list */}
       <ol className="space-y-2">

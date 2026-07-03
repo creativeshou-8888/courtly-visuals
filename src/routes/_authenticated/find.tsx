@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { PlayerCard } from "@/components/PlayerBits";
 import { players } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/find")({
+export const Route = createFileRoute("/_authenticated/find")({
   head: () => ({
     meta: [
       { title: "Find Players · Courtly" },
