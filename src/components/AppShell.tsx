@@ -6,8 +6,11 @@ const navItems = [
   { to: "/home", label: "Home", icon: Home },
   { to: "/find", label: "Find", icon: Search },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/players/me", label: "Profile", icon: User },
+  { to: "/players/me", label: "Profile", icon: User, matchPath: "/profile" },
 ] as const;
+
+// Nav uses `to: "/players/me"` legacy alias mapped visually to Profile;
+// active check uses matchPath below.
 
 function Logo() {
   return (
