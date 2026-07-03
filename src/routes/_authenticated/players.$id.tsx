@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Avatar, ProvisionalBadge } from "@/components/PlayerBits";
 import { currentUser, lastFiveResults, players } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/players/$id")({
+export const Route = createFileRoute("/_authenticated/players/$id")({
   head: () => ({
     meta: [
       { title: "Player · Courtly" },

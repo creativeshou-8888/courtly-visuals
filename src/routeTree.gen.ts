@@ -9,99 +9,85 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LeaderboardRouteImport } from './routes/leaderboard'
-import { Route as HomeRouteImport } from './routes/home'
-import { Route as FindRouteImport } from './routes/find'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PlayersIdRouteImport } from './routes/players.$id'
+import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedFindRouteImport } from './routes/_authenticated/find'
+import { Route as AuthenticatedPlayersIdRouteImport } from './routes/_authenticated/players.$id'
 
-const LeaderboardRoute = LeaderboardRouteImport.update({
-  id: '/leaderboard',
-  path: '/leaderboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HomeRoute = HomeRouteImport.update({
-  id: '/home',
-  path: '/home',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FindRoute = FindRouteImport.update({
-  id: '/find',
-  path: '/find',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlayersIdRoute = PlayersIdRouteImport.update({
-  id: '/players/$id',
+const AuthenticatedLeaderboardRoute =
+  AuthenticatedLeaderboardRouteImport.update({
+    id: '/_authenticated/leaderboard',
+    path: '/leaderboard',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
+  id: '/_authenticated/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedFindRoute = AuthenticatedFindRouteImport.update({
+  id: '/_authenticated/find',
+  path: '/find',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedPlayersIdRoute = AuthenticatedPlayersIdRouteImport.update({
+  id: '/_authenticated/players/$id',
   path: '/players/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/find': typeof FindRoute
-  '/home': typeof HomeRoute
-  '/leaderboard': typeof LeaderboardRoute
-  '/players/$id': typeof PlayersIdRoute
+  '/find': typeof AuthenticatedFindRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/players/$id': typeof AuthenticatedPlayersIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/find': typeof FindRoute
-  '/home': typeof HomeRoute
-  '/leaderboard': typeof LeaderboardRoute
-  '/players/$id': typeof PlayersIdRoute
+  '/find': typeof AuthenticatedFindRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/players/$id': typeof AuthenticatedPlayersIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/find': typeof FindRoute
-  '/home': typeof HomeRoute
-  '/leaderboard': typeof LeaderboardRoute
-  '/players/$id': typeof PlayersIdRoute
+  '/_authenticated/find': typeof AuthenticatedFindRoute
+  '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/_authenticated/players/$id': typeof AuthenticatedPlayersIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths: '/' | '/find' | '/home' | '/leaderboard' | '/players/$id'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/find' | '/home' | '/leaderboard' | '/players/$id'
-  id: '__root__' | '/' | '/find' | '/home' | '/leaderboard' | '/players/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated/find'
+    | '/_authenticated/home'
+    | '/_authenticated/leaderboard'
+    | '/_authenticated/players/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  FindRoute: typeof FindRoute
-  HomeRoute: typeof HomeRoute
-  LeaderboardRoute: typeof LeaderboardRoute
-  PlayersIdRoute: typeof PlayersIdRoute
+  AuthenticatedFindRoute: typeof AuthenticatedFindRoute
+  AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
+  AuthenticatedPlayersIdRoute: typeof AuthenticatedPlayersIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/leaderboard': {
-      id: '/leaderboard'
-      path: '/leaderboard'
-      fullPath: '/leaderboard'
-      preLoaderRoute: typeof LeaderboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/home': {
-      id: '/home'
-      path: '/home'
-      fullPath: '/home'
-      preLoaderRoute: typeof HomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/find': {
-      id: '/find'
-      path: '/find'
-      fullPath: '/find'
-      preLoaderRoute: typeof FindRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -109,11 +95,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/players/$id': {
-      id: '/players/$id'
+    '/_authenticated/leaderboard': {
+      id: '/_authenticated/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof AuthenticatedLeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/find': {
+      id: '/_authenticated/find'
+      path: '/find'
+      fullPath: '/find'
+      preLoaderRoute: typeof AuthenticatedFindRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/players/$id': {
+      id: '/_authenticated/players/$id'
       path: '/players/$id'
       fullPath: '/players/$id'
-      preLoaderRoute: typeof PlayersIdRouteImport
+      preLoaderRoute: typeof AuthenticatedPlayersIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -121,10 +128,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  FindRoute: FindRoute,
-  HomeRoute: HomeRoute,
-  LeaderboardRoute: LeaderboardRoute,
-  PlayersIdRoute: PlayersIdRoute,
+  AuthenticatedFindRoute: AuthenticatedFindRoute,
+  AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
+  AuthenticatedPlayersIdRoute: AuthenticatedPlayersIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
