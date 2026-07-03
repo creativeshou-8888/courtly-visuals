@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { ArrowLeft, CalendarClock, Lock, MapPin } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Avatar, ProvisionalBadge } from "@/components/PlayerBits";
-import { currentUser, lastFiveResults, players } from "@/lib/mock-data";
+import { lastFiveResults, players } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/_authenticated/players/$id")({
   head: () => ({
@@ -16,8 +16,11 @@ export const Route = createFileRoute("/_authenticated/players/$id")({
 
 function PlayerProfile() {
   const { id } = Route.useParams();
-  const player = id === "me" ? currentUser : players.find((p) => p.id === id) ?? players[0];
-  const isMe = id === "me";
+  if (id === "me") return <Navigate to="/profile" replace />;
+  const player = players.find((p) => p.id === id) ?? players[0];
+  const isMe = false;
+
+
 
   return (
     <AppShell>
