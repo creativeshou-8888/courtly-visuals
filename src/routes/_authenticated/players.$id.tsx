@@ -62,10 +62,15 @@ function PlayerProfile() {
         </div>
 
         {!isMe && (
-          <button className="mt-6 w-full rounded-full bg-navy px-5 py-3.5 text-sm font-semibold text-primary-foreground transition-transform active:scale-[0.98]">
+          <Link
+            to="/matches/new"
+            search={{ opponentId: player.id, opponentName: player.name }}
+            className="mt-6 block w-full rounded-full bg-navy px-5 py-3.5 text-center text-sm font-semibold text-primary-foreground transition-transform active:scale-[0.98]"
+          >
             Invite to match
-          </button>
+          </Link>
         )}
+
       </section>
 
       {/* Locked contact */}
