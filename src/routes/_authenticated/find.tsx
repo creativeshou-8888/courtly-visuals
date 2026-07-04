@@ -58,7 +58,22 @@ function OpenInvitesNearMe() {
         <div className="rounded-3xl border border-border bg-card p-5 text-sm text-muted-foreground">
           Loading open invites…
         </div>
+      ) : error ? (
+        <div className="rounded-3xl border border-destructive/40 bg-destructive/5 p-5 text-sm">
+          <p className="font-semibold text-destructive">Couldn't load open invites</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {(error as Error)?.message ?? "Something went wrong. Please try again."}
+          </p>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="mt-3 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-navy disabled:opacity-60"
+          >
+            {isFetching ? "Retrying…" : "Try again"}
+          </button>
+        </div>
       ) : invites.length === 0 ? (
+
         <div className="rounded-3xl border border-border bg-card p-6 text-center">
           <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-secondary text-navy">
             <Sparkles className="h-4 w-4" />
