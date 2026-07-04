@@ -52,8 +52,9 @@ function LeaderboardPage() {
       <div className="mb-5 inline-flex rounded-full border border-border bg-card p-1">
         {(
           [
-            ["all", "All-Time"],
+            ["all", "Rating"],
             ["month", "This Month"],
+            ["badges", "Badges"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -73,6 +74,14 @@ function LeaderboardPage() {
           Monthly rankings arrive in a later phase. Showing All-Time below.
         </div>
       )}
+
+      {tab === "badges" && (
+        <BadgesTab loading={badgesLoading} data={badgeLb ?? []} />
+      )}
+
+      {tab !== "badges" && (
+      <>
+
 
       {/* You row (pinned) */}
       <div className="sticky top-14 z-10 mb-4 md:top-16">
