@@ -168,3 +168,114 @@ export const getPlayerSummary = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return row as { id: string; name: string; photo_url: string | null; current_rating: number | null } | null;
   });
+
+export const acceptMatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("accept_match", { _id: data.id });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+
+export const declineMatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("decline_match", { _id: data.id });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+
+export const listOpenInvitesForMe = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: me } = await (context.supabase as any)
+      .from("profiles")
+      .select("current_rating")
+      .eq("id", context.userId)
+      .maybeSingle();
+    const myRating: number | null = me?.current_rating ?? null;
+
+    const nowIso = new Date().toISOString();
+    const { data, error } = await (context.supabase as any)
+      .from("matches")
+      .select("*")
+      .eq("status", "open")
+      .is("opponent_id", null)
+      .neq("creator_id", context.userId)
+      .gt("date_time", nowIso)
+      .order("date_time", { ascending: true });
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as MatchRow[];
+
+    const filtered = myRating == null
+      ? rows
+      : rows.filter((r) =>
+          (r.desired_min_rating == null || myRating >= r.desired_min_rating) &&
+          (r.desired_max_rating == null || myRating <= r.desired_max_rating),
+        );
+
+    const creatorIds = Array.from(new Set(filtered.map((r) => r.creator_id)));
+    const profiles: Record<string, { id: string; name: string; photo_url: string | null; current_rating: number | null }> = {};
+    if (creatorIds.length) {
+      const { data: profs } = await (context.supabase as any)
+        .from("profiles")
+        .select("id,name,photo_url,current_rating")
+        .in("id", creatorIds);
+      for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
+    }
+    return filtered.map((r) => ({ ...r, creator: profiles[r.creator_id] ?? null }));
+  });
+
+export const listIncomingInvites = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await (context.supabase as any)
+      .from("matches")
+      .select("*")
+      .eq("opponent_id", context.userId)
+      .eq("status", "invited")
+      .order("date_time", { ascending: true });
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as MatchRow[];
+    const ids = Array.from(new Set(rows.map((r) => r.creator_id)));
+    const profiles: Record<string, { id: string; name: string; photo_url: string | null; current_rating: number | null }> = {};
+    if (ids.length) {
+      const { data: profs } = await (context.supabase as any)
+        .from("profiles")
+        .select("id,name,photo_url,current_rating")
+        .in("id", ids);
+      for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
+    }
+    return rows.map((r) => ({ ...r, creator: profiles[r.creator_id] ?? null }));
+  });
+
+export const listUpcomingMatches = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const nowIso = new Date().toISOString();
+    const { data, error } = await (context.supabase as any)
+      .from("matches")
+      .select("*")
+      .eq("status", "accepted")
+      .gt("date_time", nowIso)
+      .or(`creator_id.eq.${context.userId},opponent_id.eq.${context.userId}`)
+      .order("date_time", { ascending: true });
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as MatchRow[];
+    const ids = Array.from(new Set(rows.flatMap((r) => [r.creator_id, r.opponent_id]).filter(Boolean) as string[]));
+    const profiles: Record<string, { id: string; name: string; photo_url: string | null }> = {};
+    if (ids.length) {
+      const { data: profs } = await (context.supabase as any)
+        .from("profiles")
+        .select("id,name,photo_url")
+        .in("id", ids);
+      for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
+    }
+    return rows.map((r) => ({
+      ...r,
+      creator: profiles[r.creator_id] ?? null,
+      opponent: r.opponent_id ? profiles[r.opponent_id] ?? null : null,
+    }));
+  });

@@ -1,10 +1,24 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CalendarClock, MapPin, MessageSquare, ShieldCheck, User as UserIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarClock,
+  CheckCircle2,
+  Lock,
+  MapPin,
+  MessageSquare,
+  ShieldCheck,
+  User as UserIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { cancelMatch, getMatch } from "@/lib/match.functions";
+import {
+  acceptMatch,
+  cancelMatch,
+  declineMatch,
+  getMatch,
+} from "@/lib/match.functions";
 import { initialsAvatar } from "@/hooks/use-current-profile";
 
 export const Route = createFileRoute("/_authenticated/matches/$id")({
@@ -20,7 +34,7 @@ export const Route = createFileRoute("/_authenticated/matches/$id")({
 const statusLabels: Record<string, string> = {
   open: "Open invite",
   invited: "Invite sent",
-  accepted: "Accepted",
+  accepted: "Match accepted",
   declined: "Declined",
   score_pending: "Score pending",
   confirmation_pending: "Awaiting confirmation",
@@ -33,11 +47,15 @@ const statusLabels: Record<string, string> = {
 
 function StatusPill({ status }: { status: string }) {
   const isLive = status === "open" || status === "invited";
+  const isAccepted = status === "accepted";
+  const cls = isAccepted
+    ? "bg-navy text-primary-foreground"
+    : isLive
+      ? "bg-court text-navy"
+      : "bg-secondary text-muted-foreground";
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${
-        isLive ? "bg-court text-navy" : "bg-secondary text-muted-foreground"
-      }`}
+      className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${cls}`}
     >
       {statusLabels[status] ?? status}
     </span>
@@ -63,20 +81,45 @@ function MatchDetail() {
   const qc = useQueryClient();
   const fetchMatch = useServerFn(getMatch);
   const cancel = useServerFn(cancelMatch);
+  const accept = useServerFn(acceptMatch);
+  const decline = useServerFn(declineMatch);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["match", id],
     queryFn: () => fetchMatch({ data: { id } }),
   });
 
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: ["match", id] });
+    qc.invalidateQueries({ queryKey: ["me", "outgoing-invites"] });
+    qc.invalidateQueries({ queryKey: ["me", "incoming-invites"] });
+    qc.invalidateQueries({ queryKey: ["me", "upcoming-matches"] });
+    qc.invalidateQueries({ queryKey: ["find", "open-invites"] });
+  };
+
   const cancelMutation = useMutation({
     mutationFn: cancel,
     onSuccess: () => {
       toast.success("Invite cancelled");
-      qc.invalidateQueries({ queryKey: ["match", id] });
-      qc.invalidateQueries({ queryKey: ["me", "outgoing-invites"] });
+      invalidateAll();
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not cancel"),
+  });
+  const acceptMutation = useMutation({
+    mutationFn: accept,
+    onSuccess: () => {
+      toast.success("Match accepted");
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not accept"),
+  });
+  const declineMutation = useMutation({
+    mutationFn: decline,
+    onSuccess: () => {
+      toast.success("Invite declined");
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not decline"),
   });
 
   if (isLoading) {
@@ -105,7 +148,12 @@ function MatchDetail() {
     hour: "numeric",
     minute: "2-digit",
   });
+  const isFuture = new Date(match.date_time).getTime() > Date.now();
   const canCancel = viewerIsCreator && (match.status === "open" || match.status === "invited");
+  const canAcceptOpen = !viewerIsCreator && match.status === "open" && isFuture;
+  const canRespondDirect =
+    !viewerIsCreator && match.status === "invited" && isFuture; // opponent-only rows are only readable by the invited opponent per RLS
+  const isAccepted = match.status === "accepted";
 
   return (
     <AppShell>
@@ -117,7 +165,7 @@ function MatchDetail() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="font-display text-2xl font-bold text-navy">
-              {match.opponent_id ? "Match invite" : "Open invite"}
+              {isAccepted ? "Match accepted" : match.opponent_id ? "Match invite" : "Open invite"}
             </h1>
             <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
               {match.match_type === "rated" ? "Rated match" : "Friendly match"} · Singles
@@ -127,9 +175,7 @@ function MatchDetail() {
         </div>
 
         <div className="mt-5 space-y-3">
-          {creator && (
-            <PersonRow label="Creator" name={creator.name} photo={creator.photo_url} />
-          )}
+          {creator && <PersonRow label="Creator" name={creator.name} photo={creator.photo_url} />}
           {match.opponent_id ? (
             opponent ? (
               <PersonRow label="Opponent" name={opponent.name} photo={opponent.photo_url} />
@@ -185,16 +231,75 @@ function MatchDetail() {
         </section>
       )}
 
-      <section className="mt-4 rounded-3xl border border-dashed border-border bg-secondary/40 p-5">
-        <div className="flex items-center gap-2 text-navy">
-          <ShieldCheck className="h-4 w-4" />
-          <p className="text-sm font-medium">Opponent response will be added in the next phase.</p>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-2 opacity-60">
-          <button disabled className="rounded-full bg-court px-4 py-2.5 text-xs font-semibold text-navy">Accept</button>
-          <button disabled className="rounded-full border border-border bg-background px-4 py-2.5 text-xs font-semibold text-navy">Decline</button>
-        </div>
-      </section>
+      {isAccepted && (
+        <>
+          <section className="mt-4 rounded-3xl border border-court/40 bg-court/10 p-5">
+            <div className="flex items-center gap-2 text-navy">
+              <CheckCircle2 className="h-4 w-4" />
+              <p className="text-sm font-semibold">Match accepted</p>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              After the match, score entry will be added in the next phase.
+            </p>
+          </section>
+
+          <section className="mt-4 rounded-3xl border border-dashed border-border bg-secondary/40 p-5">
+            <div className="flex items-center gap-2 text-navy">
+              <Lock className="h-4 w-4" />
+              <p className="text-sm font-medium">Contact sharing will be added in a later phase.</p>
+            </div>
+          </section>
+        </>
+      )}
+
+      {canAcceptOpen && (
+        <section className="mt-4 rounded-3xl border border-border bg-card p-5">
+          <div className="flex items-center gap-2 text-navy">
+            <ShieldCheck className="h-4 w-4" />
+            <p className="text-sm font-medium">Ready to play?</p>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => acceptMutation.mutate({ data: { id } })}
+              disabled={acceptMutation.isPending}
+              className="rounded-full bg-court px-4 py-2.5 text-sm font-semibold text-navy disabled:opacity-60"
+            >
+              {acceptMutation.isPending ? "Accepting…" : "Accept invite"}
+            </button>
+            <button
+              onClick={() => router.history.back()}
+              className="rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold text-navy"
+            >
+              Not for me
+            </button>
+          </div>
+        </section>
+      )}
+
+      {canRespondDirect && (
+        <section className="mt-4 rounded-3xl border border-border bg-card p-5">
+          <div className="flex items-center gap-2 text-navy">
+            <ShieldCheck className="h-4 w-4" />
+            <p className="text-sm font-medium">You've been invited</p>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => acceptMutation.mutate({ data: { id } })}
+              disabled={acceptMutation.isPending || declineMutation.isPending}
+              className="rounded-full bg-court px-4 py-2.5 text-sm font-semibold text-navy disabled:opacity-60"
+            >
+              {acceptMutation.isPending ? "Accepting…" : "Accept"}
+            </button>
+            <button
+              onClick={() => declineMutation.mutate({ data: { id } })}
+              disabled={acceptMutation.isPending || declineMutation.isPending}
+              className="rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold text-navy disabled:opacity-60"
+            >
+              {declineMutation.isPending ? "Declining…" : "Decline"}
+            </button>
+          </div>
+        </section>
+      )}
 
       {canCancel && (
         <button

@@ -1,12 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, ChevronRight, Trophy, Inbox } from "lucide-react";
+import { Plus, ChevronRight, Trophy, Inbox, CheckCircle2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/PlayerBits";
 import { recentResults } from "@/lib/mock-data";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
-import { listMyOutgoingInvites } from "@/lib/match.functions";
+import {
+  listMyOutgoingInvites,
+  listIncomingInvites,
+  listUpcomingMatches,
+} from "@/lib/match.functions";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
@@ -80,7 +84,9 @@ function OutgoingInvites() {
                   </p>
                   <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
-                    <span className="text-navy">{m.status === "open" ? "Open" : "Invited"}</span>
+                    <span className="text-navy">
+                      {m.status === "open" ? "Open" : m.status === "invited" ? "Invited" : m.status}
+                    </span>
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -89,6 +95,105 @@ function OutgoingInvites() {
           })}
         </div>
       )}
+    </section>
+  );
+}
+
+function formatWhen(iso: string) {
+  return new Date(iso).toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function IncomingInvites() {
+  const fetch = useServerFn(listIncomingInvites);
+  const { data } = useQuery({
+    queryKey: ["me", "incoming-invites"],
+    queryFn: () => fetch(),
+    staleTime: 15_000,
+  });
+  const invites = data ?? [];
+  if (invites.length === 0) return null;
+  return (
+    <section className="mb-6">
+      <SectionHeader title="Incoming invites" />
+      <div className="rounded-3xl border border-border bg-card">
+        {invites.map((m, i) => (
+          <Link
+            key={m.id}
+            to="/matches/$id"
+            params={{ id: m.id }}
+            className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 ${i > 0 ? "border-t border-border" : ""}`}
+          >
+            <img
+              src={m.creator?.photo_url || initialsAvatar(m.creator?.name || "Player")}
+              alt=""
+              className="h-10 w-10 rounded-full object-cover"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-navy">
+                {m.creator?.name ?? "Player"}
+                {m.creator?.current_rating != null && (
+                  <span className="ml-1 text-xs font-medium text-muted-foreground">· {m.creator.current_rating}</span>
+                )}
+              </p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                {formatWhen(m.date_time)} · {m.court_location}
+              </p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-court">
+                {m.match_type === "rated" ? "Rated" : "Friendly"} · Invited you
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function UpcomingMatches() {
+  const fetch = useServerFn(listUpcomingMatches);
+  const { data } = useQuery({
+    queryKey: ["me", "upcoming-matches"],
+    queryFn: () => fetch(),
+    staleTime: 15_000,
+  });
+  const matches = data ?? [];
+  if (matches.length === 0) return null;
+  return (
+    <section className="mb-6">
+      <SectionHeader title="Upcoming matches" />
+      <div className="rounded-3xl border border-border bg-card">
+        {matches.map((m, i) => (
+          <Link
+            key={m.id}
+            to="/matches/$id"
+            params={{ id: m.id }}
+            className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 ${i > 0 ? "border-t border-border" : ""}`}
+          >
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-court text-navy">
+              <CheckCircle2 className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-navy">
+                {m.creator?.name ?? "Player"} vs {m.opponent?.name ?? "Player"}
+              </p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                {formatWhen(m.date_time)} · {m.court_location}
+              </p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-navy">
+                {m.match_type === "rated" ? "Rated" : "Friendly"} · Accepted
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        ))}
+      </div>
     </section>
   );
 }
@@ -136,6 +241,8 @@ function HomePage() {
         </section>
       ) : null}
 
+      <IncomingInvites />
+      <UpcomingMatches />
       <OutgoingInvites />
 
       {/* Recent community results — placeholder content */}
