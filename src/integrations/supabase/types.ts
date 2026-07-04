@@ -86,6 +86,44 @@ export type Database = {
         }
         Relationships: []
       }
+      post_match_feedback: {
+        Row: {
+          badges: string[]
+          created_at: string
+          giver_id: string
+          id: string
+          match_id: string
+          note: string | null
+          receiver_id: string
+        }
+        Insert: {
+          badges?: string[]
+          created_at?: string
+          giver_id: string
+          id?: string
+          match_id: string
+          note?: string | null
+          receiver_id: string
+        }
+        Update: {
+          badges?: string[]
+          created_at?: string
+          giver_id?: string
+          id?: string
+          match_id?: string
+          note?: string | null
+          receiver_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_match_feedback_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           availability: string[]
@@ -524,6 +562,24 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      submit_post_match_feedback: {
+        Args: { _badges: string[]; _match_id: string; _note: string }
+        Returns: {
+          badges: string[]
+          created_at: string
+          giver_id: string
+          id: string
+          match_id: string
+          note: string | null
+          receiver_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_match_feedback"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       submit_score: {
         Args: { _id: string; _sets: Json; _winner_id: string }
