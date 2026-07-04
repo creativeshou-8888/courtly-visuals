@@ -37,12 +37,14 @@ function formatWhen(iso: string) {
 
 function OpenInvitesNearMe() {
   const fetch = useServerFn(listOpenInvitesForMe);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["find", "open-invites"],
     queryFn: () => fetch(),
     staleTime: 15_000,
+    retry: 1,
   });
   const invites = data ?? [];
+
 
   return (
     <section className="mb-6">
