@@ -28,6 +28,11 @@ import {
   submitScore,
   type ScoreSet,
 } from "@/lib/match.functions";
+import {
+  getMyFeedbackForMatch,
+  submitFeedback,
+} from "@/lib/feedback.functions";
+import { FeedbackForm } from "@/components/FeedbackForm";
 import { initialsAvatar } from "@/hooks/use-current-profile";
 
 export const Route = createFileRoute("/_authenticated/matches/$id")({
