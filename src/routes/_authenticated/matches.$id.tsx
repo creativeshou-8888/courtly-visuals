@@ -101,10 +101,22 @@ function MatchDetail() {
   const confirm = useServerFn(confirmScore);
   const dispute = useServerFn(disputeScore);
   const [scoreOpen, setScoreOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackSkipped, setFeedbackSkipped] = useState(false);
+
+  const fetchMyFeedback = useServerFn(getMyFeedbackForMatch);
+  const sendFeedback = useServerFn(submitFeedback);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["match", id],
     queryFn: () => fetchMatch({ data: { id } }),
+  });
+
+  const { data: myFeedback } = useQuery({
+    queryKey: ["match", id, "my-feedback"],
+    queryFn: () => fetchMyFeedback({ data: { match_id: id } }),
+    enabled: !!data && data.match.status === "confirmed",
+    staleTime: 30_000,
   });
 
   const invalidateAll = () => {
