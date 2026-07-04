@@ -204,6 +204,30 @@ export type Database = {
       }
     }
     Functions: {
+      accept_match: {
+        Args: { _id: string }
+        Returns: {
+          court_booked: boolean
+          court_location: string
+          created_at: string
+          creator_id: string
+          date_time: string
+          desired_max_rating: number | null
+          desired_min_rating: number | null
+          id: string
+          match_type: Database["public"]["Enums"]["match_type"]
+          message: string | null
+          opponent_id: string | null
+          status: Database["public"]["Enums"]["match_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "matches"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       complete_onboarding: {
         Args: {
           _availability: string[]
@@ -266,6 +290,30 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      decline_match: {
+        Args: { _id: string }
+        Returns: {
+          court_booked: boolean
+          court_location: string
+          created_at: string
+          creator_id: string
+          date_time: string
+          desired_max_rating: number | null
+          desired_min_rating: number | null
+          id: string
+          match_type: Database["public"]["Enums"]["match_type"]
+          message: string | null
+          opponent_id: string | null
+          status: Database["public"]["Enums"]["match_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "matches"
           isOneToOne: true
           isSetofReturn: false
         }
