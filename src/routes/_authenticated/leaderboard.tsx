@@ -5,6 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { ProvisionalBadge } from "@/components/PlayerBits";
 import { getLeaderboard } from "@/lib/match.functions";
+import { getBadgeLeaderboard } from "@/lib/feedback.functions";
+import { Award } from "lucide-react";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
