@@ -123,7 +123,9 @@ function OnboardingPage() {
           bio: null,
         },
       });
-      await invalidate();
+      // Do NOT invalidate the profile query yet — that would flip `onboarded`
+      // to true and the layout guard would redirect us off this page. Show the
+      // completion screen first, then invalidate on CTA click.
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
