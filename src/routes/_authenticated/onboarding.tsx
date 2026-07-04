@@ -155,13 +155,19 @@ function OnboardingPage() {
             provisional window.
           </p>
           <button
-            onClick={() => router.navigate({ to: "/find" })}
+            onClick={async () => {
+              await invalidate();
+              router.navigate({ to: "/find" });
+            }}
             className="mt-6 w-full rounded-full bg-navy px-5 py-3.5 text-sm font-semibold text-primary-foreground transition-transform active:scale-[0.98]"
           >
             Find your first opponent
           </button>
           <button
-            onClick={() => router.navigate({ to: "/home" })}
+            onClick={async () => {
+              await invalidate();
+              router.navigate({ to: "/home" });
+            }}
             className="mt-2 w-full rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold text-navy hover:bg-secondary"
           >
             Go to Home
