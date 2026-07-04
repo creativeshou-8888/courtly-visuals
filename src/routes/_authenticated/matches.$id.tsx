@@ -179,6 +179,17 @@ function MatchDetail() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not dispute"),
   });
+  const feedbackMutation = useMutation({
+    mutationFn: sendFeedback,
+    onSuccess: () => {
+      toast.success("Kudos sent");
+      setFeedbackOpen(false);
+      qc.invalidateQueries({ queryKey: ["match", id, "my-feedback"] });
+      qc.invalidateQueries({ queryKey: ["kudos"] });
+      qc.invalidateQueries({ queryKey: ["leaderboard", "badges"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not send feedback"),
+  });
 
   if (isLoading) {
     return (
