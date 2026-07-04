@@ -109,6 +109,8 @@ function MatchDetail() {
     qc.invalidateQueries({ queryKey: ["me", "upcoming-matches"] });
     qc.invalidateQueries({ queryKey: ["find", "open-invites"] });
     qc.invalidateQueries({ queryKey: ["me", "profile"] });
+    qc.invalidateQueries({ queryKey: ["me", "recent-rating-change"] });
+    qc.invalidateQueries({ queryKey: ["leaderboard", "all-time"] });
   };
 
   const cancelMutation = useMutation({
