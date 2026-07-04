@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ProvisionalBadge } from "@/components/PlayerBits";
@@ -19,8 +19,8 @@ function LeaderboardPage() {
   const [tab, setTab] = useState<"all" | "month">("all");
   const { data: profile } = useCurrentProfile();
   const ranked = [...players].sort((a, b) => b.rating - a.rating);
-  const myRank = 6; // placeholder
   const photo = profile?.photo_url || initialsAvatar(profile?.name || "You");
+  const hasMatches = (profile?.rated_matches ?? 0) > 0;
 
   return (
     <AppShell>
@@ -51,22 +51,43 @@ function LeaderboardPage() {
 
       {/* You row (pinned) */}
       <div className="sticky top-14 z-10 mb-4 md:top-16">
-        <div className="grid grid-cols-[2.5rem_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-3xl bg-navy p-3 text-primary-foreground shadow-lg shadow-navy/20">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-court text-navy font-display font-bold">
-            #{myRank}
-          </span>
-          <img src={photo} alt="" className="h-10 w-10 rounded-full" />
-          <div className="min-w-0">
-            <p className="truncate font-semibold">You</p>
-            <p className="truncate text-xs text-primary-foreground/70">
-              {profile?.wins ?? 0}W · {profile?.losses ?? 0}L
-              {profile?.provisional ? " · Provisional" : ""}
-            </p>
+        {hasMatches ? (
+          <div className="grid grid-cols-[2.5rem_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-3xl bg-navy p-3 text-primary-foreground shadow-lg shadow-navy/20">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-court text-navy font-display font-bold">
+              #—
+            </span>
+            <img src={photo} alt="" className="h-10 w-10 rounded-full object-cover" />
+            <div className="min-w-0">
+              <p className="truncate font-semibold">You</p>
+              <p className="truncate text-xs text-primary-foreground/70">
+                {profile?.wins ?? 0}W · {profile?.losses ?? 0}L
+                {profile?.provisional ? " · Provisional" : ""}
+              </p>
+            </div>
+            <span className="rating-hero text-2xl text-court">
+              {profile?.current_rating ?? "—"}
+            </span>
           </div>
-          <span className="rating-hero text-2xl text-court">
-            {profile?.current_rating ?? "—"}
-          </span>
-        </div>
+        ) : (
+          <div className="grid grid-cols-[2.5rem_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-3xl border border-dashed border-navy/20 bg-card p-3">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-navy font-display text-xs font-bold">
+              —
+            </span>
+            <img src={photo} alt="" className="h-10 w-10 rounded-full object-cover" />
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-navy">Rank pending</p>
+              <p className="truncate text-xs text-muted-foreground">
+                Play your first rated match to enter the rankings.
+              </p>
+            </div>
+            <Link
+              to="/find"
+              className="rounded-full bg-navy px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+            >
+              Find
+            </Link>
+          </div>
+        )}
       </div>
 
 
