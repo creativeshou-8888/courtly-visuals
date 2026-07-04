@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -33,7 +33,10 @@ import {
   submitFeedback,
 } from "@/lib/feedback.functions";
 import { FeedbackForm } from "@/components/FeedbackForm";
+import { BadgeMedal } from "@/components/BadgeMedal";
+import { markKudosSkipped, clearKudosSkipped } from "@/lib/kudos-skipped";
 import { initialsAvatar } from "@/hooks/use-current-profile";
+
 
 export const Route = createFileRoute("/_authenticated/matches/$id")({
   head: () => ({
