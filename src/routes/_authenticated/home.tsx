@@ -10,6 +10,7 @@ import {
   listMyOutgoingInvites,
   listIncomingInvites,
   listUpcomingMatches,
+  listMyRecentMatches,
 } from "@/lib/match.functions";
 
 export const Route = createFileRoute("/_authenticated/home")({
@@ -203,7 +204,79 @@ function UpcomingMatches() {
   );
 }
 
+function RecentMatches() {
+  const fetch = useServerFn(listMyRecentMatches);
+  const { data } = useQuery({
+    queryKey: ["me", "recent-matches"],
+    queryFn: () => fetch(),
+    staleTime: 15_000,
+  });
+  const matches = data ?? [];
+  if (matches.length === 0) return null;
+  return (
+    <section className="mb-6">
+      <SectionHeader title="My recent matches" />
+      <div className="rounded-3xl border border-border bg-card">
+        {matches.map((m, i) => {
+          const when = new Date(m.date_time).toLocaleDateString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          });
+          const score = (m.score_sets ?? [])
+            .map((s: { a: number; b: number }) => (m.viewer_is_creator ? `${s.a}–${s.b}` : `${s.b}–${s.a}`))
+            .join(", ");
+          const change = m.rating_change;
+          const changeStr =
+            change == null ? null : `${change > 0 ? "+" : ""}${change}`;
+          return (
+            <Link
+              key={m.id}
+              to="/matches/$id"
+              params={{ id: m.id }}
+              className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 ${i > 0 ? "border-t border-border" : ""}`}
+            >
+              <img
+                src={m.opponent?.photo_url || initialsAvatar(m.opponent?.name || "Player")}
+                alt=""
+                className="h-10 w-10 rounded-full object-cover"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-navy">
+                  {m.opponent?.name ?? "Player"}
+                </p>
+                <p className="mt-0.5 truncate text-xs">
+                  <span
+                    className={`font-semibold ${m.won ? "text-navy" : "text-muted-foreground"}`}
+                  >
+                    {m.won ? "WIN" : "LOSS"}
+                  </span>
+                  {score && <span className="text-muted-foreground"> · {score}</span>}
+                  {changeStr && (
+                    <span
+                      className={`ml-1 font-semibold ${
+                        (change ?? 0) >= 0 ? "text-navy" : "text-destructive"
+                      }`}
+                    >
+                      · {changeStr}
+                    </span>
+                  )}
+                </p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {when}
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function HomePage() {
+
   const { data: profile } = useCurrentProfile();
   const first = profile?.name?.split(" ")[0] || "there";
   const photo = profile?.photo_url || initialsAvatar(profile?.name || "You");
@@ -249,6 +322,8 @@ function HomePage() {
       <IncomingInvites />
       <UpcomingMatches />
       <OutgoingInvites />
+      <RecentMatches />
+
 
       {/* Recent community results — placeholder content */}
       <section className="mb-6">
