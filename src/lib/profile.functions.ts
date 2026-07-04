@@ -13,7 +13,7 @@ const levelSchema = z.union([
 
 const onboardingSchema = z.object({
   name: z.string().trim().min(1).max(80),
-  photo_url: z.string().max(2048).nullable().optional(),
+  photo_url: z.string().max(4096).nullable().optional(),
   level: levelSchema,
   preferred_courts: z.array(z.string().max(500)).max(20).default([]),
   availability: z.array(z.string().max(40)).max(20).default([]),
@@ -23,7 +23,7 @@ const onboardingSchema = z.object({
 
 const updateSchema = z.object({
   name: z.string().trim().min(1).max(80).optional(),
-  photo_url: z.string().max(2048).nullable().optional(),
+  photo_url: z.string().max(4096).nullable().optional(),
   preferred_courts: z.array(z.string().max(500)).max(20).optional(),
   availability: z.array(z.string().max(40)).max(20).optional(),
   phone: z.string().trim().max(30).nullable().optional(),
