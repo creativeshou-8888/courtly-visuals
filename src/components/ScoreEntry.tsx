@@ -2,6 +2,7 @@ import { useState } from "react";
 import { validateTennisSets, type ScoreSet } from "@/lib/match.functions";
 
 type Player = { id: string; name: string };
+type SetInput = { a: string; b: string };
 
 export function ScoreEntry({
   creator,
@@ -17,9 +18,9 @@ export function ScoreEntry({
   onSubmit: (winnerId: string, sets: ScoreSet[]) => void;
 }) {
   const [winnerId, setWinnerId] = useState<string>("");
-  const [sets, setSets] = useState<ScoreSet[]>([
-    { a: 6, b: 0 },
-    { a: 6, b: 0 },
+  const [sets, setSets] = useState<SetInput[]>([
+    { a: "", b: "" },
+    { a: "", b: "" },
   ]);
   const [thirdSet, setThirdSet] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,26 +28,34 @@ export function ScoreEntry({
   const activeSets = thirdSet ? sets : sets.slice(0, 2);
 
   const updateSet = (i: number, side: "a" | "b", value: string) => {
-    const n = value === "" ? 0 : parseInt(value, 10);
+    const cleaned = value.replace(/[^0-9]/g, "");
     const next = [...sets];
-    next[i] = { ...next[i], [side]: Number.isNaN(n) ? 0 : n };
+    next[i] = { ...next[i], [side]: cleaned };
     setSets(next);
   };
 
   const toggleThird = () => {
     if (!thirdSet && sets.length < 3) {
-      setSets([...sets, { a: 10, b: 0 }]);
+      setSets([...sets, { a: "", b: "" }]);
     }
     setThirdSet((v) => !v);
   };
 
+  const allFilled = activeSets.every((s) => s.a !== "" && s.b !== "");
+  const canSubmit = !!winnerId && allFilled;
+
   const handleSubmit = () => {
     setError(null);
     if (!winnerId) return setError("Select the winner");
+    if (!allFilled) return setError("Enter a score for every set");
+    const parsed: ScoreSet[] = activeSets.map((s) => ({
+      a: parseInt(s.a, 10),
+      b: parseInt(s.b, 10),
+    }));
     const creatorWon = winnerId === creator.id;
-    const err = validateTennisSets(activeSets, creatorWon);
+    const err = validateTennisSets(parsed, creatorWon);
     if (err) return setError(err);
-    onSubmit(winnerId, activeSets);
+    onSubmit(winnerId, parsed);
   };
 
   return (
@@ -90,8 +99,10 @@ export function ScoreEntry({
               <span className="mb-1 truncate text-navy">{creator.name}</span>
               <input
                 type="number"
+                inputMode="numeric"
                 min={0}
                 max={30}
+                placeholder="–"
                 value={s.a}
                 onChange={(e) => updateSet(i, "a", e.target.value)}
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-center text-lg font-semibold text-navy focus:border-navy focus:outline-none"
@@ -102,8 +113,10 @@ export function ScoreEntry({
               <span className="mb-1 truncate text-navy">{opponent.name}</span>
               <input
                 type="number"
+                inputMode="numeric"
                 min={0}
                 max={30}
+                placeholder="–"
                 value={s.b}
                 onChange={(e) => updateSet(i, "b", e.target.value)}
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-center text-lg font-semibold text-navy focus:border-navy focus:outline-none"
@@ -144,7 +157,7 @@ export function ScoreEntry({
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={submitting}
+          disabled={submitting || !canSubmit}
           className="rounded-full bg-court px-4 py-2.5 text-sm font-semibold text-navy disabled:opacity-60"
         >
           {submitting ? "Submitting…" : "Submit score"}
