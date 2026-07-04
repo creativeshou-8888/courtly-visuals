@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       matches: {
         Row: {
+          confirmed_at: string | null
           court_booked: boolean
           court_location: string
           created_at: string
@@ -27,10 +28,15 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
           opponent_id: string | null
+          score_sets: Json | null
           status: Database["public"]["Enums"]["match_status"]
+          submitted_at: string | null
+          submitted_by: string | null
           updated_at: string
+          winner_id: string | null
         }
         Insert: {
+          confirmed_at?: string | null
           court_booked?: boolean
           court_location: string
           created_at?: string
@@ -42,10 +48,15 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           message?: string | null
           opponent_id?: string | null
+          score_sets?: Json | null
           status?: Database["public"]["Enums"]["match_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
           updated_at?: string
+          winner_id?: string | null
         }
         Update: {
+          confirmed_at?: string | null
           court_booked?: boolean
           court_location?: string
           created_at?: string
@@ -57,8 +68,12 @@ export type Database = {
           match_type?: Database["public"]["Enums"]["match_type"]
           message?: string | null
           opponent_id?: string | null
+          score_sets?: Json | null
           status?: Database["public"]["Enums"]["match_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
           updated_at?: string
+          winner_id?: string | null
         }
         Relationships: []
       }
@@ -207,6 +222,7 @@ export type Database = {
       accept_match: {
         Args: { _id: string }
         Returns: {
+          confirmed_at: string | null
           court_booked: boolean
           court_location: string
           created_at: string
@@ -218,8 +234,12 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
           opponent_id: string | null
+          score_sets: Json | null
           status: Database["public"]["Enums"]["match_status"]
+          submitted_at: string | null
+          submitted_by: string | null
           updated_at: string
+          winner_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -265,6 +285,35 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      confirm_score: {
+        Args: { _id: string }
+        Returns: {
+          confirmed_at: string | null
+          court_booked: boolean
+          court_location: string
+          created_at: string
+          creator_id: string
+          date_time: string
+          desired_max_rating: number | null
+          desired_min_rating: number | null
+          id: string
+          match_type: Database["public"]["Enums"]["match_type"]
+          message: string | null
+          opponent_id: string | null
+          score_sets: Json | null
+          status: Database["public"]["Enums"]["match_status"]
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+          winner_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "matches"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       correct_starting_level: {
         Args: { _level: number }
         Returns: {
@@ -297,6 +346,7 @@ export type Database = {
       decline_match: {
         Args: { _id: string }
         Returns: {
+          confirmed_at: string | null
           court_booked: boolean
           court_location: string
           created_at: string
@@ -308,8 +358,41 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
           opponent_id: string | null
+          score_sets: Json | null
           status: Database["public"]["Enums"]["match_status"]
+          submitted_at: string | null
+          submitted_by: string | null
           updated_at: string
+          winner_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "matches"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      dispute_score: {
+        Args: { _id: string }
+        Returns: {
+          confirmed_at: string | null
+          court_booked: boolean
+          court_location: string
+          created_at: string
+          creator_id: string
+          date_time: string
+          desired_max_rating: number | null
+          desired_min_rating: number | null
+          id: string
+          match_type: Database["public"]["Enums"]["match_type"]
+          message: string | null
+          opponent_id: string | null
+          score_sets: Json | null
+          status: Database["public"]["Enums"]["match_status"]
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+          winner_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -382,6 +465,39 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      submit_score: {
+        Args: { _id: string; _sets: Json; _winner_id: string }
+        Returns: {
+          confirmed_at: string | null
+          court_booked: boolean
+          court_location: string
+          created_at: string
+          creator_id: string
+          date_time: string
+          desired_max_rating: number | null
+          desired_min_rating: number | null
+          id: string
+          match_type: Database["public"]["Enums"]["match_type"]
+          message: string | null
+          opponent_id: string | null
+          score_sets: Json | null
+          status: Database["public"]["Enums"]["match_status"]
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+          winner_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "matches"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      validate_tennis_sets: {
+        Args: { _creator_won: boolean; _sets: Json }
+        Returns: undefined
       }
     }
     Enums: {
