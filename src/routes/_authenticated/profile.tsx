@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { LEVEL_DESCRIPTIONS, decodeCourt } from "@/lib/rating";
 import { getMyRecentRatingChange } from "@/lib/match.functions";
+import { getKudosForProfile } from "@/lib/feedback.functions";
+import { Award } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
