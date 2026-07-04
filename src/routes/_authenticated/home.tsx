@@ -10,6 +10,7 @@ import {
   listMyOutgoingInvites,
   listIncomingInvites,
   listUpcomingMatches,
+  listMyRecentMatches,
 } from "@/lib/match.functions";
 
 export const Route = createFileRoute("/_authenticated/home")({
