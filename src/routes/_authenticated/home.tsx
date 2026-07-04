@@ -322,6 +322,8 @@ function HomePage() {
       <IncomingInvites />
       <UpcomingMatches />
       <OutgoingInvites />
+      <RecentMatches />
+
 
       {/* Recent community results — placeholder content */}
       <section className="mb-6">
