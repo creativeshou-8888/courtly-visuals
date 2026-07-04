@@ -21,6 +21,7 @@ export type Database = {
           court_location: string
           created_at: string
           creator_id: string
+          creator_rating_change: number | null
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
@@ -28,6 +29,8 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
           opponent_id: string | null
+          opponent_rating_change: number | null
+          rating_applied: boolean
           score_sets: Json | null
           status: Database["public"]["Enums"]["match_status"]
           submitted_at: string | null
@@ -41,6 +44,7 @@ export type Database = {
           court_location: string
           created_at?: string
           creator_id: string
+          creator_rating_change?: number | null
           date_time: string
           desired_max_rating?: number | null
           desired_min_rating?: number | null
@@ -48,6 +52,8 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           message?: string | null
           opponent_id?: string | null
+          opponent_rating_change?: number | null
+          rating_applied?: boolean
           score_sets?: Json | null
           status?: Database["public"]["Enums"]["match_status"]
           submitted_at?: string | null
@@ -61,6 +67,7 @@ export type Database = {
           court_location?: string
           created_at?: string
           creator_id?: string
+          creator_rating_change?: number | null
           date_time?: string
           desired_max_rating?: number | null
           desired_min_rating?: number | null
@@ -68,6 +75,8 @@ export type Database = {
           match_type?: Database["public"]["Enums"]["match_type"]
           message?: string | null
           opponent_id?: string | null
+          opponent_rating_change?: number | null
+          rating_applied?: boolean
           score_sets?: Json | null
           status?: Database["public"]["Enums"]["match_status"]
           submitted_at?: string | null
@@ -139,6 +148,44 @@ export type Database = {
           wins?: number
         }
         Relationships: []
+      }
+      rating_history: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string
+          rating_after: number
+          rating_before: number
+          rating_change: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id: string
+          rating_after: number
+          rating_before: number
+          rating_change: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string
+          rating_after?: number
+          rating_before?: number
+          rating_change?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rating_history_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -227,6 +274,7 @@ export type Database = {
           court_location: string
           created_at: string
           creator_id: string
+          creator_rating_change: number | null
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
@@ -234,6 +282,8 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
           opponent_id: string | null
+          opponent_rating_change: number | null
+          rating_applied: boolean
           score_sets: Json | null
           status: Database["public"]["Enums"]["match_status"]
           submitted_at: string | null
@@ -293,6 +343,7 @@ export type Database = {
           court_location: string
           created_at: string
           creator_id: string
+          creator_rating_change: number | null
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
@@ -300,6 +351,8 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
           opponent_id: string | null
+          opponent_rating_change: number | null
+          rating_applied: boolean
           score_sets: Json | null
           status: Database["public"]["Enums"]["match_status"]
           submitted_at: string | null
@@ -351,6 +404,7 @@ export type Database = {
           court_location: string
           created_at: string
           creator_id: string
+          creator_rating_change: number | null
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
@@ -358,6 +412,8 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
           opponent_id: string | null
+          opponent_rating_change: number | null
+          rating_applied: boolean
           score_sets: Json | null
           status: Database["public"]["Enums"]["match_status"]
           submitted_at: string | null
@@ -380,6 +436,7 @@ export type Database = {
           court_location: string
           created_at: string
           creator_id: string
+          creator_rating_change: number | null
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
@@ -387,6 +444,8 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
           opponent_id: string | null
+          opponent_rating_change: number | null
+          rating_applied: boolean
           score_sets: Json | null
           status: Database["public"]["Enums"]["match_status"]
           submitted_at: string | null
@@ -474,6 +533,7 @@ export type Database = {
           court_location: string
           created_at: string
           creator_id: string
+          creator_rating_change: number | null
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
@@ -481,6 +541,8 @@ export type Database = {
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
           opponent_id: string | null
+          opponent_rating_change: number | null
+          rating_applied: boolean
           score_sets: Json | null
           status: Database["public"]["Enums"]["match_status"]
           submitted_at: string | null
