@@ -293,12 +293,10 @@ export const listIncomingInvites = createServerFn({ method: "GET" })
 export const listUpcomingMatches = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const nowIso = new Date().toISOString();
     const { data, error } = await (context.supabase as any)
       .from("matches")
       .select("*")
-      .eq("status", "accepted")
-      .gt("date_time", nowIso)
+      .in("status", ["accepted", "score_pending"])
       .or(`creator_id.eq.${context.userId},opponent_id.eq.${context.userId}`)
       .order("date_time", { ascending: true });
     if (error) throw new Error(error.message);
@@ -318,3 +316,44 @@ export const listUpcomingMatches = createServerFn({ method: "GET" })
       opponent: r.opponent_id ? profiles[r.opponent_id] ?? null : null,
     }));
   });
+
+const submitSchema = z.object({
+  id: uuid,
+  winner_id: uuid,
+  sets: z
+    .array(z.object({ a: z.number().int().min(0).max(30), b: z.number().int().min(0).max(30) }))
+    .min(2)
+    .max(3),
+});
+
+export const submitScore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => submitSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("submit_score", {
+      _id: data.id,
+      _winner_id: data.winner_id,
+      _sets: data.sets,
+    });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+
+export const confirmScore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("confirm_score", { _id: data.id });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+
+export const disputeScore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("dispute_score", { _id: data.id });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+
