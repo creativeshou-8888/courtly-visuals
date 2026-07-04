@@ -1,11 +1,14 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { CalendarClock, LogOut, MapPin, Pencil, ShieldCheck } from "lucide-react";
+import { CalendarClock, LogOut, MapPin, Pencil, ShieldCheck, TrendingDown, TrendingUp } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { ProvisionalBadge } from "@/components/PlayerBits";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { LEVEL_DESCRIPTIONS, decodeCourt } from "@/lib/rating";
+import { getMyRecentRatingChange } from "@/lib/match.functions";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
