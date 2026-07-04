@@ -19,6 +19,7 @@ import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedFindRouteImport } from './routes/_authenticated/find'
+import { Route as AuthenticatedProfileSecurityRouteImport } from './routes/_authenticated/profile.security'
 import { Route as AuthenticatedProfileEditRouteImport } from './routes/_authenticated/profile.edit'
 import { Route as AuthenticatedPlayersIdRouteImport } from './routes/_authenticated/players.$id'
 
@@ -72,6 +73,12 @@ const AuthenticatedFindRoute = AuthenticatedFindRouteImport.update({
   path: '/find',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProfileSecurityRoute =
+  AuthenticatedProfileSecurityRouteImport.update({
+    id: '/security',
+    path: '/security',
+    getParentRoute: () => AuthenticatedProfileRoute,
+  } as any)
 const AuthenticatedProfileEditRoute =
   AuthenticatedProfileEditRouteImport.update({
     id: '/edit',
@@ -96,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/players/$id': typeof AuthenticatedPlayersIdRoute
   '/profile/edit': typeof AuthenticatedProfileEditRoute
+  '/profile/security': typeof AuthenticatedProfileSecurityRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -109,6 +117,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/players/$id': typeof AuthenticatedPlayersIdRoute
   '/profile/edit': typeof AuthenticatedProfileEditRoute
+  '/profile/security': typeof AuthenticatedProfileSecurityRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -124,6 +133,7 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/players/$id': typeof AuthenticatedPlayersIdRoute
   '/_authenticated/profile/edit': typeof AuthenticatedProfileEditRoute
+  '/_authenticated/profile/security': typeof AuthenticatedProfileSecurityRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/players/$id'
     | '/profile/edit'
+    | '/profile/security'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/players/$id'
     | '/profile/edit'
+    | '/profile/security'
   id:
     | '__root__'
     | '/'
@@ -166,6 +178,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/players/$id'
     | '/_authenticated/profile/edit'
+    | '/_authenticated/profile/security'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -248,6 +261,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFindRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/profile/security': {
+      id: '/_authenticated/profile/security'
+      path: '/security'
+      fullPath: '/profile/security'
+      preLoaderRoute: typeof AuthenticatedProfileSecurityRouteImport
+      parentRoute: typeof AuthenticatedProfileRoute
+    }
     '/_authenticated/profile/edit': {
       id: '/_authenticated/profile/edit'
       path: '/edit'
@@ -267,10 +287,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedProfileRouteChildren {
   AuthenticatedProfileEditRoute: typeof AuthenticatedProfileEditRoute
+  AuthenticatedProfileSecurityRoute: typeof AuthenticatedProfileSecurityRoute
 }
 
 const AuthenticatedProfileRouteChildren: AuthenticatedProfileRouteChildren = {
   AuthenticatedProfileEditRoute: AuthenticatedProfileEditRoute,
+  AuthenticatedProfileSecurityRoute: AuthenticatedProfileSecurityRoute,
 }
 
 const AuthenticatedProfileRouteWithChildren =
