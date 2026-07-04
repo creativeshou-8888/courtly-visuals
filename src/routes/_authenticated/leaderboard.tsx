@@ -20,13 +20,20 @@ export const Route = createFileRoute("/_authenticated/leaderboard")({
 });
 
 function LeaderboardPage() {
-  const [tab, setTab] = useState<"all" | "month">("all");
+  const [tab, setTab] = useState<"all" | "month" | "badges">("all");
   const { data: profile } = useCurrentProfile();
   const fetchLb = useServerFn(getLeaderboard);
+  const fetchBadges = useServerFn(getBadgeLeaderboard);
   const { data: lb, isLoading } = useQuery({
     queryKey: ["leaderboard", "all-time"],
     queryFn: () => fetchLb(),
     staleTime: 30_000,
+  });
+  const { data: badgeLb, isLoading: badgesLoading } = useQuery({
+    queryKey: ["leaderboard", "badges"],
+    queryFn: () => fetchBadges(),
+    staleTime: 30_000,
+    enabled: tab === "badges",
   });
 
   const photo = profile?.photo_url || initialsAvatar(profile?.name || "You");
