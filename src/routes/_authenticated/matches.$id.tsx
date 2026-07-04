@@ -187,12 +187,15 @@ function MatchDetail() {
     onSuccess: () => {
       toast.success("Kudos sent");
       setFeedbackOpen(false);
+      clearKudosSkipped(id);
       qc.invalidateQueries({ queryKey: ["match", id, "my-feedback"] });
       qc.invalidateQueries({ queryKey: ["kudos"] });
       qc.invalidateQueries({ queryKey: ["leaderboard", "badges"] });
+      qc.invalidateQueries({ queryKey: ["me", "recent-matches"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not send feedback"),
   });
+
 
   if (isLoading) {
     return (
