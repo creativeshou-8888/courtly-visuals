@@ -66,11 +66,57 @@ export const COURT_OPTIONS = [
 ];
 
 export const AVAILABILITY_OPTIONS = [
-  "Weekday AM",
+  "Weekday mornings",
+  "Weekday afternoons",
   "Weekday evenings",
-  "Sat AM",
-  "Sat PM",
-  "Sun AM",
-  "Sun PM",
-  "Weekends",
+  "Saturday mornings",
+  "Saturday afternoons",
+  "Saturday evenings",
+  "Sunday mornings",
+  "Sunday afternoons",
+  "Sunday evenings",
 ];
+
+export const SG_AREAS = [
+  "Central",
+  "North",
+  "North-East",
+  "East",
+  "West",
+];
+
+export const COURT_TYPES = [
+  "Public ActiveSG",
+  "Condo / private",
+  "Club",
+  "School / university",
+  "Other",
+];
+
+export type CourtEntry = {
+  name: string;
+  area: string;
+  type: string;
+  canHost: boolean;
+};
+
+export function encodeCourt(c: CourtEntry): string {
+  return JSON.stringify(c);
+}
+
+export function decodeCourt(raw: string): CourtEntry {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && "name" in parsed) {
+      return {
+        name: String(parsed.name ?? ""),
+        area: String(parsed.area ?? ""),
+        type: String(parsed.type ?? ""),
+        canHost: Boolean(parsed.canHost),
+      };
+    }
+  } catch {
+    // fall through — legacy plain-string entry
+  }
+  return { name: raw, area: "", type: "", canHost: false };
+}
