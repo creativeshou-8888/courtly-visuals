@@ -447,3 +447,64 @@ export const getMyRecentRatingChange = createServerFn({ method: "GET" })
     return { ...row, opponent_name: opponentName } as RatingHistoryEntry;
   });
 
+export type RecentMatch = {
+  id: string;
+  date_time: string;
+  match_type: "rated" | "friendly";
+  score_sets: ScoreSet[] | null;
+  won: boolean;
+  opponent: { id: string; name: string; photo_url: string | null } | null;
+  rating_change: number | null;
+  viewer_is_creator: boolean;
+};
+
+export const listMyRecentMatches = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await (context.supabase as any)
+      .from("matches")
+      .select("*")
+      .eq("status", "confirmed")
+      .or(`creator_id.eq.${context.userId},opponent_id.eq.${context.userId}`)
+      .order("confirmed_at", { ascending: false, nullsFirst: false })
+      .order("date_time", { ascending: false })
+      .limit(5);
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as any[];
+    const oppIds = Array.from(
+      new Set(
+        rows
+          .map((r) => (r.creator_id === context.userId ? r.opponent_id : r.creator_id))
+          .filter(Boolean) as string[],
+      ),
+    );
+    const profiles: Record<string, { id: string; name: string; photo_url: string | null }> = {};
+    if (oppIds.length) {
+      const { data: profs } = await (context.supabase as any)
+        .from("profiles")
+        .select("id,name,photo_url")
+        .in("id", oppIds);
+      for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
+    }
+    return rows.map((r) => {
+      const viewerIsCreator = r.creator_id === context.userId;
+      const oppId = viewerIsCreator ? r.opponent_id : r.creator_id;
+      const change =
+        r.match_type === "rated"
+          ? viewerIsCreator
+            ? r.creator_rating_change ?? null
+            : r.opponent_rating_change ?? null
+          : null;
+      return {
+        id: r.id,
+        date_time: r.date_time,
+        match_type: r.match_type,
+        score_sets: r.score_sets ?? null,
+        won: r.winner_id === context.userId,
+        opponent: oppId ? profiles[oppId] ?? null : null,
+        rating_change: change,
+        viewer_is_creator: viewerIsCreator,
+      } satisfies RecentMatch;
+    });
+  });
+
