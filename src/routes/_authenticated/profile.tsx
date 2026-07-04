@@ -209,6 +209,51 @@ function ProfilePage() {
           )}
         </div>
       </section>
+
+      <section className="mt-4 rounded-3xl border border-border bg-card p-5">
+        <div className="mb-3 flex items-center gap-2 text-navy">
+          <Award className="h-4 w-4" />
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wider">
+            Player Kudos
+          </h2>
+        </div>
+        {!kudos || kudos.totalFeedback === 0 ? (
+          <p className="text-sm text-muted-foreground">No kudos yet.</p>
+        ) : (
+          <>
+            {kudos.badgeCounts.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {kudos.badgeCounts.map((b) => (
+                  <span
+                    key={b.badge}
+                    className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs text-navy"
+                  >
+                    {b.badge}
+                    <span className="rounded-full bg-navy px-1.5 text-[10px] font-semibold text-primary-foreground">
+                      {b.count}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            )}
+            {kudos.notes.length > 0 && (
+              <div className="mt-4 space-y-3">
+                {kudos.notes.map((n, i) => (
+                  <div key={i} className="rounded-2xl bg-secondary/60 p-3">
+                    <p className="text-sm text-navy">"{n.note}"</p>
+                    {n.giver_name && (
+                      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        — {n.giver_name}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
     </AppShell>
   );
 }
