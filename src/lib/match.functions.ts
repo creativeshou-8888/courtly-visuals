@@ -357,3 +357,93 @@ export const disputeScore = createServerFn({ method: "POST" })
     return row as MatchRow;
   });
 
+export type LeaderboardEntry = {
+  id: string;
+  name: string;
+  photo_url: string | null;
+  current_rating: number;
+  wins: number;
+  losses: number;
+  rated_matches: number;
+  provisional: boolean;
+  rank: number;
+};
+
+export const getLeaderboard = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await (context.supabase as any)
+      .from("profiles")
+      .select("id,name,photo_url,current_rating,wins,losses,rated_matches,provisional,onboarded")
+      .eq("onboarded", true)
+      .gt("rated_matches", 0)
+      .not("current_rating", "is", null)
+      .order("current_rating", { ascending: false })
+      .order("rated_matches", { ascending: false })
+      .order("id", { ascending: true })
+      .limit(200);
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as any[];
+    const ranked: LeaderboardEntry[] = rows.map((r, i) => ({
+      id: r.id,
+      name: r.name ?? "Player",
+      photo_url: r.photo_url ?? null,
+      current_rating: r.current_rating ?? 0,
+      wins: r.wins ?? 0,
+      losses: r.losses ?? 0,
+      rated_matches: r.rated_matches ?? 0,
+      provisional: !!r.provisional,
+      rank: i + 1,
+    }));
+
+    const meIndex = ranked.findIndex((r) => r.id === context.userId);
+    const me = meIndex >= 0 ? ranked[meIndex] : null;
+    return {
+      top: ranked.slice(0, 50),
+      me,
+      total: ranked.length,
+    };
+  });
+
+export type RatingHistoryEntry = {
+  id: string;
+  match_id: string;
+  rating_before: number;
+  rating_after: number;
+  rating_change: number;
+  created_at: string;
+  opponent_name: string | null;
+};
+
+export const getMyRecentRatingChange = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await (context.supabase as any)
+      .from("rating_history")
+      .select("id,match_id,rating_before,rating_after,rating_change,created_at")
+      .eq("user_id", context.userId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (error) throw new Error(error.message);
+    const row = (data ?? [])[0];
+    if (!row) return null;
+    const { data: m } = await (context.supabase as any)
+      .from("matches")
+      .select("creator_id,opponent_id")
+      .eq("id", row.match_id)
+      .maybeSingle();
+    let opponentName: string | null = null;
+    if (m) {
+      const oppId = m.creator_id === context.userId ? m.opponent_id : m.creator_id;
+      if (oppId) {
+        const { data: p } = await (context.supabase as any)
+          .from("profiles")
+          .select("name")
+          .eq("id", oppId)
+          .maybeSingle();
+        opponentName = p?.name ?? null;
+      }
+    }
+    return { ...row, opponent_name: opponentName } as RatingHistoryEntry;
+  });
+
