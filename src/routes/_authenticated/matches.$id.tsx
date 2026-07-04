@@ -109,6 +109,8 @@ function MatchDetail() {
     qc.invalidateQueries({ queryKey: ["me", "upcoming-matches"] });
     qc.invalidateQueries({ queryKey: ["find", "open-invites"] });
     qc.invalidateQueries({ queryKey: ["me", "profile"] });
+    qc.invalidateQueries({ queryKey: ["me", "recent-rating-change"] });
+    qc.invalidateQueries({ queryKey: ["leaderboard", "all-time"] });
   };
 
   const cancelMutation = useMutation({
@@ -390,7 +392,7 @@ function MatchDetail() {
             <p className="text-sm font-medium">Score submitted — waiting for opponent confirmation</p>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Your opponent will confirm or dispute the result. Ratings don't change yet in this phase.
+            Your opponent will confirm or dispute the result. Ratings update on confirmation for rated matches.
           </p>
         </section>
       )}

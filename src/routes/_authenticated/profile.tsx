@@ -1,11 +1,14 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { CalendarClock, LogOut, MapPin, Pencil, ShieldCheck } from "lucide-react";
+import { CalendarClock, LogOut, MapPin, Pencil, ShieldCheck, TrendingDown, TrendingUp } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { ProvisionalBadge } from "@/components/PlayerBits";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { LEVEL_DESCRIPTIONS, decodeCourt } from "@/lib/rating";
+import { getMyRecentRatingChange } from "@/lib/match.functions";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -21,6 +24,14 @@ function ProfilePage() {
   const { data: profile } = useCurrentProfile();
   const router = useRouter();
   const qc = useQueryClient();
+  const fetchRecent = useServerFn(getMyRecentRatingChange);
+  const { data: recent } = useQuery({
+    queryKey: ["me", "recent-rating-change"],
+    queryFn: () => fetchRecent(),
+    staleTime: 30_000,
+    enabled: !!profile,
+  });
+
 
   async function signOut() {
     await qc.cancelQueries();
@@ -72,8 +83,25 @@ function ProfilePage() {
             <p className="rating-hero text-5xl leading-none text-navy">
               {profile.current_rating ?? "—"}
             </p>
+            {recent && (
+              <p
+                className={`mt-1 inline-flex items-center gap-1 text-xs font-semibold ${
+                  recent.rating_change >= 0 ? "text-navy" : "text-destructive"
+                }`}
+              >
+                {recent.rating_change >= 0 ? (
+                  <TrendingUp className="h-3 w-3" />
+                ) : (
+                  <TrendingDown className="h-3 w-3" />
+                )}
+                {recent.rating_change >= 0 ? "+" : ""}
+                {recent.rating_change}
+                {recent.opponent_name ? ` vs ${recent.opponent_name}` : ""}
+              </p>
+            )}
           </div>
         </div>
+
 
         {profile.provisional && (
           <div className="mt-6 rounded-2xl bg-secondary/60 p-4">
