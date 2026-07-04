@@ -7,6 +7,7 @@ import {
   Navigate,
 } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentProfile } from "@/hooks/use-current-profile";
 
@@ -25,16 +26,19 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const router = useRouter();
   const location = useLocation();
+  const qc = useQueryClient();
   const { data: profile, isLoading } = useCurrentProfile();
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
+        qc.clear();
         router.navigate({ to: "/auth", replace: true });
       }
     });
     return () => sub.subscription.unsubscribe();
-  }, [router]);
+  }, [router, qc]);
+
 
   if (isLoading) {
     return (
