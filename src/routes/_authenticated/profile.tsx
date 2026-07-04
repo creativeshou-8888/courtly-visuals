@@ -83,8 +83,25 @@ function ProfilePage() {
             <p className="rating-hero text-5xl leading-none text-navy">
               {profile.current_rating ?? "—"}
             </p>
+            {recent && (
+              <p
+                className={`mt-1 inline-flex items-center gap-1 text-xs font-semibold ${
+                  recent.rating_change >= 0 ? "text-navy" : "text-destructive"
+                }`}
+              >
+                {recent.rating_change >= 0 ? (
+                  <TrendingUp className="h-3 w-3" />
+                ) : (
+                  <TrendingDown className="h-3 w-3" />
+                )}
+                {recent.rating_change >= 0 ? "+" : ""}
+                {recent.rating_change}
+                {recent.opponent_name ? ` vs ${recent.opponent_name}` : ""}
+              </p>
+            )}
           </div>
         </div>
+
 
         {profile.provisional && (
           <div className="mt-6 rounded-2xl bg-secondary/60 p-4">
