@@ -193,6 +193,35 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      correct_starting_level: {
+        Args: { _level: number }
+        Returns: {
+          availability: string[]
+          bio: string | null
+          created_at: string
+          current_rating: number | null
+          email: string
+          id: string
+          initial_rating: number | null
+          level: number | null
+          losses: number
+          name: string
+          onboarded: boolean
+          phone: string | null
+          photo_url: string | null
+          preferred_courts: string[]
+          provisional: boolean
+          rated_matches: number
+          updated_at: string
+          wins: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_my_profile: {
         Args: never
         Returns: {
