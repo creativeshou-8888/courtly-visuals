@@ -241,6 +241,8 @@ function HomePage() {
         </section>
       ) : null}
 
+      <IncomingInvites />
+      <UpcomingMatches />
       <OutgoingInvites />
 
       {/* Recent community results — placeholder content */}
