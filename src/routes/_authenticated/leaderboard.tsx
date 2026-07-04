@@ -5,6 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { ProvisionalBadge } from "@/components/PlayerBits";
 import { getLeaderboard } from "@/lib/match.functions";
+import { getBadgeLeaderboard } from "@/lib/feedback.functions";
+import { Award } from "lucide-react";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
@@ -18,13 +20,20 @@ export const Route = createFileRoute("/_authenticated/leaderboard")({
 });
 
 function LeaderboardPage() {
-  const [tab, setTab] = useState<"all" | "month">("all");
+  const [tab, setTab] = useState<"all" | "month" | "badges">("all");
   const { data: profile } = useCurrentProfile();
   const fetchLb = useServerFn(getLeaderboard);
+  const fetchBadges = useServerFn(getBadgeLeaderboard);
   const { data: lb, isLoading } = useQuery({
     queryKey: ["leaderboard", "all-time"],
     queryFn: () => fetchLb(),
     staleTime: 30_000,
+  });
+  const { data: badgeLb, isLoading: badgesLoading } = useQuery({
+    queryKey: ["leaderboard", "badges"],
+    queryFn: () => fetchBadges(),
+    staleTime: 30_000,
+    enabled: tab === "badges",
   });
 
   const photo = profile?.photo_url || initialsAvatar(profile?.name || "You");
@@ -43,8 +52,9 @@ function LeaderboardPage() {
       <div className="mb-5 inline-flex rounded-full border border-border bg-card p-1">
         {(
           [
-            ["all", "All-Time"],
+            ["all", "Rating"],
             ["month", "This Month"],
+            ["badges", "Badges"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -64,6 +74,14 @@ function LeaderboardPage() {
           Monthly rankings arrive in a later phase. Showing All-Time below.
         </div>
       )}
+
+      {tab === "badges" && (
+        <BadgesTab loading={badgesLoading} data={badgeLb ?? []} />
+      )}
+
+      {tab !== "badges" && (
+      <>
+
 
       {/* You row (pinned) */}
       <div className="sticky top-14 z-10 mb-4 md:top-16">
@@ -160,6 +178,68 @@ function LeaderboardPage() {
           You're ranked #{me.rank} of {lb?.total ?? me.rank}.
         </p>
       )}
+      </>
+      )}
     </AppShell>
   );
 }
+
+function BadgesTab({
+  loading,
+  data,
+}: {
+  loading: boolean;
+  data: { badge: string; players: { id: string; name: string; photo_url: string | null; count: number }[] }[];
+}) {
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Loading badges…</p>;
+  }
+  const hasAny = data.some((d) => d.players.length > 0);
+  if (!hasAny) {
+    return (
+      <div className="rounded-3xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+        No badges awarded yet. Give kudos after your next rated match.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-4">
+      {data.map((cat) => (
+        <section key={cat.badge} className="rounded-3xl border border-border bg-card p-5">
+          <div className="mb-3 flex items-center gap-2 text-navy">
+            <Award className="h-4 w-4" />
+            <h2 className="font-display text-sm font-semibold uppercase tracking-wider">
+              {cat.badge}
+            </h2>
+          </div>
+          {cat.players.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No awards yet.</p>
+          ) : (
+            <ol className="space-y-1.5">
+              {cat.players.map((p, i) => (
+                <li
+                  key={p.id}
+                  className="grid grid-cols-[1.75rem_auto_minmax(0,1fr)_auto] items-center gap-2"
+                >
+                  <span className="grid h-6 w-6 place-items-center rounded-full bg-secondary text-[11px] font-bold text-navy">
+                    {i + 1}
+                  </span>
+                  <img
+                    src={p.photo_url || initialsAvatar(p.name)}
+                    alt=""
+                    className="h-7 w-7 rounded-full object-cover"
+                  />
+                  <p className="truncate text-sm text-navy">{p.name}</p>
+                  <span className="rounded-full bg-navy px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+                    ×{p.count}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+      ))}
+    </div>
+  );
+}
+

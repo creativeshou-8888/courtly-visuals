@@ -28,6 +28,11 @@ import {
   submitScore,
   type ScoreSet,
 } from "@/lib/match.functions";
+import {
+  getMyFeedbackForMatch,
+  submitFeedback,
+} from "@/lib/feedback.functions";
+import { FeedbackForm } from "@/components/FeedbackForm";
 import { initialsAvatar } from "@/hooks/use-current-profile";
 
 export const Route = createFileRoute("/_authenticated/matches/$id")({
@@ -96,10 +101,22 @@ function MatchDetail() {
   const confirm = useServerFn(confirmScore);
   const dispute = useServerFn(disputeScore);
   const [scoreOpen, setScoreOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackSkipped, setFeedbackSkipped] = useState(false);
+
+  const fetchMyFeedback = useServerFn(getMyFeedbackForMatch);
+  const sendFeedback = useServerFn(submitFeedback);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["match", id],
     queryFn: () => fetchMatch({ data: { id } }),
+  });
+
+  const { data: myFeedback } = useQuery({
+    queryKey: ["match", id, "my-feedback"],
+    queryFn: () => fetchMyFeedback({ data: { match_id: id } }),
+    enabled: !!data && data.match.status === "confirmed",
+    staleTime: 30_000,
   });
 
   const invalidateAll = () => {
@@ -161,6 +178,17 @@ function MatchDetail() {
       invalidateAll();
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not dispute"),
+  });
+  const feedbackMutation = useMutation({
+    mutationFn: sendFeedback,
+    onSuccess: () => {
+      toast.success("Kudos sent");
+      setFeedbackOpen(false);
+      qc.invalidateQueries({ queryKey: ["match", id, "my-feedback"] });
+      qc.invalidateQueries({ queryKey: ["kudos"] });
+      qc.invalidateQueries({ queryKey: ["leaderboard", "badges"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not send feedback"),
   });
 
   if (isLoading) {
@@ -331,6 +359,66 @@ function MatchDetail() {
           )}
         </section>
       )}
+
+      {isConfirmed && match.match_type === "rated" && match.opponent_id && (
+        myFeedback ? (
+          <section className="mt-4 rounded-3xl border border-court/40 bg-court/10 p-5">
+            <p className="text-sm font-semibold text-navy">Kudos sent ✓</p>
+            {myFeedback.badges.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {myFeedback.badges.map((b) => (
+                  <span
+                    key={b}
+                    className="inline-flex rounded-full bg-navy px-3 py-1 text-[11px] font-semibold text-primary-foreground"
+                  >
+                    {b}
+                  </span>
+                ))}
+              </div>
+            )}
+            {myFeedback.note && (
+              <p className="mt-2 text-sm text-navy">"{myFeedback.note}"</p>
+            )}
+          </section>
+        ) : feedbackOpen ? (
+          <FeedbackForm
+            opponentName={
+              (viewerIsCreator ? opponent?.name : creator?.name) ?? "your opponent"
+            }
+            submitting={feedbackMutation.isPending}
+            onCancel={() => {
+              setFeedbackOpen(false);
+              setFeedbackSkipped(true);
+            }}
+            onSubmit={(badges, note) =>
+              feedbackMutation.mutate({ data: { match_id: id, badges, note } })
+            }
+          />
+        ) : feedbackSkipped ? null : (
+          <section className="mt-4 rounded-3xl border border-border bg-card p-5">
+            <p className="text-sm font-semibold text-navy">Give your opponent some kudos?</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Pick up to 3 badges and leave an optional note.
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setFeedbackOpen(true)}
+                className="rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+              >
+                Give feedback
+              </button>
+              <button
+                onClick={() => setFeedbackSkipped(true)}
+                className="rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold text-navy"
+              >
+                Skip for now
+              </button>
+            </div>
+          </section>
+        )
+      )}
+
+
 
       {isAccepted && (
         <>
