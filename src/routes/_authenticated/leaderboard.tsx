@@ -6,7 +6,6 @@ import { AppShell } from "@/components/AppShell";
 import { ProvisionalBadge } from "@/components/PlayerBits";
 import { getLeaderboard } from "@/lib/match.functions";
 import { getBadgeLeaderboard } from "@/lib/feedback.functions";
-import { Award } from "lucide-react";
 import { getBadgeMeta } from "@/lib/badges";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 
