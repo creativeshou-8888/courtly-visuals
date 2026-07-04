@@ -13,9 +13,9 @@ const levelSchema = z.union([
 
 const onboardingSchema = z.object({
   name: z.string().trim().min(1).max(80),
-  photo_url: z.string().url().max(2048).nullable().optional(),
+  photo_url: z.string().max(2048).nullable().optional(),
   level: levelSchema,
-  preferred_courts: z.array(z.string().max(80)).max(20).default([]),
+  preferred_courts: z.array(z.string().max(500)).max(20).default([]),
   availability: z.array(z.string().max(40)).max(20).default([]),
   phone: z.string().trim().max(30).nullable().optional(),
   bio: z.string().trim().max(500).nullable().optional(),
@@ -23,8 +23,8 @@ const onboardingSchema = z.object({
 
 const updateSchema = z.object({
   name: z.string().trim().min(1).max(80).optional(),
-  photo_url: z.string().url().max(2048).nullable().optional(),
-  preferred_courts: z.array(z.string().max(80)).max(20).optional(),
+  photo_url: z.string().max(2048).nullable().optional(),
+  preferred_courts: z.array(z.string().max(500)).max(20).optional(),
   availability: z.array(z.string().max(40)).max(20).optional(),
   phone: z.string().trim().max(30).nullable().optional(),
   bio: z.string().trim().max(500).nullable().optional(),
@@ -87,3 +87,13 @@ export const updateMyProfile = createServerFn({ method: "POST" })
     return row;
   });
 
+export const correctStartingLevel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ level: levelSchema }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase.rpc as any)("correct_starting_level", {
+      _level: data.level,
+    });
+    if (error) throw new Error(error.message);
+    return row;
+  });
