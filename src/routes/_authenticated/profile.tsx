@@ -218,41 +218,48 @@ function ProfilePage() {
           </h2>
         </div>
         {!kudos || kudos.totalFeedback === 0 ? (
-          <p className="text-sm text-muted-foreground">No kudos yet.</p>
+          <p className="text-sm text-muted-foreground">
+            No kudos yet — play a rated match to earn achievement badges.
+          </p>
         ) : (
           <>
             {kudos.badgeCounts.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {kudos.badgeCounts.map((b) => (
-                  <span
-                    key={b.badge}
-                    className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs text-navy"
-                  >
-                    {b.badge}
-                    <span className="rounded-full bg-navy px-1.5 text-[10px] font-semibold text-primary-foreground">
-                      {b.count}
-                    </span>
-                  </span>
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
+                {kudos.badgeCounts.slice(0, 3).map((b) => (
+                  <BadgeMedal key={b.badge} name={b.badge} count={b.count} size="lg" />
                 ))}
               </div>
+            )}
+            {kudos.badgeCounts.length > 3 && (
+              <details className="mt-3">
+                <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-navy">
+                  View all kudos ({kudos.badgeCounts.length})
+                </summary>
+                <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                  {kudos.badgeCounts.slice(3).map((b) => (
+                    <BadgeMedal key={b.badge} name={b.badge} count={b.count} size="md" />
+                  ))}
+                </div>
+              </details>
             )}
             {kudos.notes.length > 0 && (
               <div className="mt-4 space-y-3">
                 {kudos.notes.map((n, i) => (
-                  <div key={i} className="rounded-2xl bg-secondary/60 p-3">
-                    <p className="text-sm text-navy">"{n.note}"</p>
+                  <blockquote key={i} className="rounded-2xl bg-secondary/60 p-3">
+                    <p className="text-sm italic text-navy">"{n.note}"</p>
                     {n.giver_name && (
                       <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                         — {n.giver_name}
                       </p>
                     )}
-                  </div>
+                  </blockquote>
                 ))}
               </div>
             )}
           </>
         )}
       </section>
+
 
     </AppShell>
   );
