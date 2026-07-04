@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -5,19 +6,27 @@ import {
   ArrowLeft,
   CalendarClock,
   CheckCircle2,
+  ClipboardEdit,
+  Flag,
   Lock,
   MapPin,
   MessageSquare,
   ShieldCheck,
+  Trophy,
   User as UserIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
+import { ScoreEntry } from "@/components/ScoreEntry";
 import {
   acceptMatch,
   cancelMatch,
+  confirmScore,
   declineMatch,
+  disputeScore,
   getMatch,
+  submitScore,
+  type ScoreSet,
 } from "@/lib/match.functions";
 import { initialsAvatar } from "@/hooks/use-current-profile";
 
