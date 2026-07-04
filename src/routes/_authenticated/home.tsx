@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, ChevronRight, Trophy } from "lucide-react";
+import { Plus, ChevronRight, Trophy, Inbox } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/PlayerBits";
 import { recentResults } from "@/lib/mock-data";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
+import { listMyOutgoingInvites } from "@/lib/match.functions";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
@@ -23,6 +26,70 @@ function SectionHeader({ title, action }: { title: string; action?: string }) {
       </h2>
       {action && <span className="text-xs font-medium text-navy">{action}</span>}
     </div>
+  );
+}
+
+function OutgoingInvites() {
+  const fetchInvites = useServerFn(listMyOutgoingInvites);
+  const { data } = useQuery({
+    queryKey: ["me", "outgoing-invites"],
+    queryFn: () => fetchInvites(),
+    staleTime: 15_000,
+  });
+  const invites = data ?? [];
+
+  return (
+    <section className="mb-6">
+      <SectionHeader title="My outgoing invites" />
+      {invites.length === 0 ? (
+        <div className="rounded-3xl border border-border bg-card p-6 text-center">
+          <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-secondary text-navy">
+            <Inbox className="h-4 w-4" />
+          </div>
+          <p className="mt-3 text-sm text-navy">No outgoing invites yet.</p>
+          <Link
+            to="/matches/new"
+            className="mt-3 inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-xs font-semibold text-primary-foreground"
+          >
+            <Plus className="h-4 w-4 text-court" /> Create a match
+          </Link>
+        </div>
+      ) : (
+        <div className="rounded-3xl border border-border bg-card">
+          {invites.map((m, i) => {
+            const when = new Date(m.date_time).toLocaleString(undefined, {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            });
+            return (
+              <Link
+                key={m.id}
+                to="/matches/$id"
+                params={{ id: m.id }}
+                className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-4 ${i > 0 ? "border-t border-border" : ""}`}
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-navy">
+                    {m.opponent_id ? m.opponent_name ?? "Player" : "Open invite"}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    {when} · {m.court_location}
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
+                    <span className="text-navy">{m.status === "open" ? "Open" : "Invited"}</span>
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -69,6 +136,8 @@ function HomePage() {
         </section>
       ) : null}
 
+      <OutgoingInvites />
+
       {/* Recent community results — placeholder content */}
       <section className="mb-6">
         <SectionHeader title="Recent community results" />
@@ -97,10 +166,9 @@ function HomePage() {
 
       {/* Floating create match */}
       <Link
-        to="/find"
+        to="/matches/new"
         className="fixed bottom-24 right-5 z-20 inline-flex items-center gap-2 rounded-full bg-navy px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-navy/25 md:bottom-8"
       >
-        <ChevronRight className="hidden" />
         <Plus className="h-5 w-5 text-court" />
         Create match
       </Link>
