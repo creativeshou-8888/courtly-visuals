@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+
 import { ArrowLeft, CalendarClock, Lock, MapPin } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Avatar, ProvisionalBadge } from "@/components/PlayerBits";
