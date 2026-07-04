@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      matches: {
+        Row: {
+          court_booked: boolean
+          court_location: string
+          created_at: string
+          creator_id: string
+          date_time: string
+          desired_max_rating: number | null
+          desired_min_rating: number | null
+          id: string
+          match_type: Database["public"]["Enums"]["match_type"]
+          message: string | null
+          opponent_id: string | null
+          status: Database["public"]["Enums"]["match_status"]
+          updated_at: string
+        }
+        Insert: {
+          court_booked?: boolean
+          court_location: string
+          created_at?: string
+          creator_id: string
+          date_time: string
+          desired_max_rating?: number | null
+          desired_min_rating?: number | null
+          id?: string
+          match_type: Database["public"]["Enums"]["match_type"]
+          message?: string | null
+          opponent_id?: string | null
+          status?: Database["public"]["Enums"]["match_status"]
+          updated_at?: string
+        }
+        Update: {
+          court_booked?: boolean
+          court_location?: string
+          created_at?: string
+          creator_id?: string
+          date_time?: string
+          desired_max_rating?: number | null
+          desired_min_rating?: number | null
+          id?: string
+          match_type?: Database["public"]["Enums"]["match_type"]
+          message?: string | null
+          opponent_id?: string | null
+          status?: Database["public"]["Enums"]["match_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           availability: string[]
@@ -290,6 +338,19 @@ export type Database = {
     }
     Enums: {
       app_role: "player" | "admin"
+      match_status:
+        | "open"
+        | "invited"
+        | "accepted"
+        | "declined"
+        | "score_pending"
+        | "confirmation_pending"
+        | "confirmed"
+        | "disputed"
+        | "cancelled"
+        | "expired"
+        | "voided"
+      match_type: "rated" | "friendly"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -418,6 +479,20 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["player", "admin"],
+      match_status: [
+        "open",
+        "invited",
+        "accepted",
+        "declined",
+        "score_pending",
+        "confirmation_pending",
+        "confirmed",
+        "disputed",
+        "cancelled",
+        "expired",
+        "voided",
+      ],
+      match_type: ["rated", "friendly"],
     },
   },
 } as const
