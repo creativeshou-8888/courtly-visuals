@@ -27,6 +27,7 @@ const createSchema = z
     { message: "Min rating must be ≤ max rating", path: ["desired_min_rating"] },
   );
 
+export type ScoreSet = { a: number; b: number };
 export type MatchRow = {
   id: string;
   creator_id: string;
@@ -52,7 +53,45 @@ export type MatchRow = {
   message: string | null;
   created_at: string;
   updated_at: string;
+  winner_id: string | null;
+  submitted_by: string | null;
+  submitted_at: string | null;
+  confirmed_at: string | null;
+  score_sets: ScoreSet[] | null;
 };
+
+export function validateTennisSets(sets: ScoreSet[], creatorWon: boolean): string | null {
+  if (!Array.isArray(sets) || sets.length < 2 || sets.length > 3) {
+    return "A best-of-3 match needs 2 or 3 sets";
+  }
+  let aSets = 0;
+  let bSets = 0;
+  for (let i = 0; i < sets.length; i++) {
+    const { a, b } = sets[i];
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0) {
+      return `Set ${i + 1}: enter whole non-negative game counts`;
+    }
+    if (a === b) return `Set ${i + 1} cannot be a tie (${a}-${b})`;
+    const isFinal = i === sets.length - 1 && sets.length === 3;
+    const standard =
+      (a === 6 && b >= 0 && b <= 4) ||
+      (b === 6 && a >= 0 && a <= 4) ||
+      (a === 7 && (b === 5 || b === 6)) ||
+      (b === 7 && (a === 5 || a === 6));
+    const matchTb = isFinal && ((a >= 10 && a - b >= 2) || (b >= 10 && b - a >= 2));
+    if (!standard && !matchTb) {
+      return `Invalid tennis set score: ${a}-${b}`;
+    }
+    if (a > b) aSets++;
+    else bSets++;
+  }
+  if (!((aSets === 2 && bSets <= 1) || (bSets === 2 && aSets <= 1))) {
+    return "A match must be won 2 sets to 0 or 2 sets to 1";
+  }
+  if (creatorWon && aSets < bSets) return "Set scores do not match the selected winner";
+  if (!creatorWon && bSets < aSets) return "Set scores do not match the selected winner";
+  return null;
+}
 
 export const createMatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -254,12 +293,10 @@ export const listIncomingInvites = createServerFn({ method: "GET" })
 export const listUpcomingMatches = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const nowIso = new Date().toISOString();
     const { data, error } = await (context.supabase as any)
       .from("matches")
       .select("*")
-      .eq("status", "accepted")
-      .gt("date_time", nowIso)
+      .in("status", ["accepted", "score_pending"])
       .or(`creator_id.eq.${context.userId},opponent_id.eq.${context.userId}`)
       .order("date_time", { ascending: true });
     if (error) throw new Error(error.message);
@@ -279,3 +316,44 @@ export const listUpcomingMatches = createServerFn({ method: "GET" })
       opponent: r.opponent_id ? profiles[r.opponent_id] ?? null : null,
     }));
   });
+
+const submitSchema = z.object({
+  id: uuid,
+  winner_id: uuid,
+  sets: z
+    .array(z.object({ a: z.number().int().min(0).max(30), b: z.number().int().min(0).max(30) }))
+    .min(2)
+    .max(3),
+});
+
+export const submitScore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => submitSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("submit_score", {
+      _id: data.id,
+      _winner_id: data.winner_id,
+      _sets: data.sets,
+    });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+
+export const confirmScore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("confirm_score", { _id: data.id });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+
+export const disputeScore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("dispute_score", { _id: data.id });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+

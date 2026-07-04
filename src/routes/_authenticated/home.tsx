@@ -187,7 +187,12 @@ function UpcomingMatches() {
                 {formatWhen(m.date_time)} · {m.court_location}
               </p>
               <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-navy">
-                {m.match_type === "rated" ? "Rated" : "Friendly"} · Accepted
+                {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
+                {m.status === "score_pending"
+                  ? "Score pending"
+                  : new Date(m.date_time).getTime() <= Date.now()
+                    ? "Ready to score"
+                    : "Accepted"}
               </p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
