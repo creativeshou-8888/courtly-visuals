@@ -206,6 +206,41 @@ function UpcomingMatches() {
   );
 }
 
+function PendingKudosReminder({
+  matches,
+}: {
+  matches: { id: string; opponent: { name: string } | null }[];
+}) {
+  if (matches.length === 0) return null;
+  const first = matches[0];
+  const n = matches.length;
+  return (
+    <section className="mb-4 rounded-3xl border border-court/40 bg-court/10 p-4">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+        <span className="grid h-10 w-10 place-items-center rounded-2xl bg-court text-navy">
+          <Award className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-navy">
+            You have {n} player{n === 1 ? "" : "s"} waiting for kudos
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Recognise a great opponent with badges or a short note.
+          </p>
+        </div>
+        <Link
+          to="/matches/$id"
+          params={{ id: first.id }}
+          hash="kudos"
+          className="rounded-full bg-navy px-4 py-2 text-xs font-semibold text-primary-foreground"
+        >
+          Give kudos
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function RecentMatches() {
   const fetch = useServerFn(listMyRecentMatches);
   const { data } = useQuery({
@@ -213,69 +248,95 @@ function RecentMatches() {
     queryFn: () => fetch(),
     staleTime: 15_000,
   });
+  const { skipped } = useSkippedKudos();
   const matches = data ?? [];
   if (matches.length === 0) return null;
+
+  const pending = matches.filter(
+    (m) => m.match_type === "rated" && !m.has_feedback && !skipped.has(m.id) && m.opponent,
+  );
+
   return (
-    <section className="mb-6">
-      <SectionHeader title="My recent matches" />
-      <div className="rounded-3xl border border-border bg-card">
-        {matches.map((m, i) => {
-          const when = new Date(m.date_time).toLocaleDateString(undefined, {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-          });
-          const score = (m.score_sets ?? [])
-            .map((s: { a: number; b: number }) => (m.viewer_is_creator ? `${s.a}–${s.b}` : `${s.b}–${s.a}`))
-            .join(", ");
-          const change = m.rating_change;
-          const changeStr =
-            change == null ? null : `${change > 0 ? "+" : ""}${change}`;
-          return (
-            <Link
-              key={m.id}
-              to="/matches/$id"
-              params={{ id: m.id }}
-              className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 ${i > 0 ? "border-t border-border" : ""}`}
-            >
-              <img
-                src={m.opponent?.photo_url || initialsAvatar(m.opponent?.name || "Player")}
-                alt=""
-                className="h-10 w-10 rounded-full object-cover"
-              />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-navy">
-                  {m.opponent?.name ?? "Player"}
-                </p>
-                <p className="mt-0.5 truncate text-xs">
-                  <span
-                    className={`font-semibold ${m.won ? "text-navy" : "text-muted-foreground"}`}
-                  >
-                    {m.won ? "WIN" : "LOSS"}
-                  </span>
-                  {score && <span className="text-muted-foreground"> · {score}</span>}
-                  {changeStr && (
+    <>
+      <PendingKudosReminder
+        matches={pending.map((m) => ({ id: m.id, opponent: m.opponent }))}
+      />
+      <section className="mb-6">
+        <SectionHeader title="My recent matches" />
+        <div className="rounded-3xl border border-border bg-card">
+          {matches.map((m, i) => {
+            const when = new Date(m.date_time).toLocaleDateString(undefined, {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            });
+            const score = (m.score_sets ?? [])
+              .map((s: { a: number; b: number }) => (m.viewer_is_creator ? `${s.a}–${s.b}` : `${s.b}–${s.a}`))
+              .join(", ");
+            const change = m.rating_change;
+            const changeStr =
+              change == null ? null : `${change > 0 ? "+" : ""}${change}`;
+            const isRated = m.match_type === "rated";
+            const kudosPending = isRated && !m.has_feedback && !skipped.has(m.id);
+            const kudosSent = isRated && m.has_feedback;
+            return (
+              <Link
+                key={m.id}
+                to="/matches/$id"
+                params={{ id: m.id }}
+                hash={kudosPending ? "kudos" : undefined}
+                className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 ${i > 0 ? "border-t border-border" : ""}`}
+              >
+                <img
+                  src={m.opponent?.photo_url || initialsAvatar(m.opponent?.name || "Player")}
+                  alt=""
+                  className="h-10 w-10 rounded-full object-cover"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-navy">
+                    {m.opponent?.name ?? "Player"}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs">
                     <span
-                      className={`ml-1 font-semibold ${
-                        (change ?? 0) >= 0 ? "text-navy" : "text-destructive"
-                      }`}
+                      className={`font-semibold ${m.won ? "text-navy" : "text-muted-foreground"}`}
                     >
-                      · {changeStr}
+                      {m.won ? "WIN" : "LOSS"}
                     </span>
-                  )}
-                </p>
-                <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {when}
-                </p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </Link>
-          );
-        })}
-      </div>
-    </section>
+                    {score && <span className="text-muted-foreground"> · {score}</span>}
+                    {changeStr && (
+                      <span
+                        className={`ml-1 font-semibold ${
+                          (change ?? 0) >= 0 ? "text-navy" : "text-destructive"
+                        }`}
+                      >
+                        · {changeStr}
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span>{when}</span>
+                    {kudosPending && (
+                      <span className="rounded-full bg-court px-2 py-0.5 text-navy">
+                        Kudos pending
+                      </span>
+                    )}
+                    {kudosSent && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-navy">
+                        Kudos sent <CheckCircle2 className="h-3 w-3" />
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+    </>
   );
 }
+
 
 function HomePage() {
 
