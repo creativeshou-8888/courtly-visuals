@@ -27,9 +27,16 @@ function ProfilePage() {
   const router = useRouter();
   const qc = useQueryClient();
   const fetchRecent = useServerFn(getMyRecentRatingChange);
+  const fetchKudos = useServerFn(getKudosForProfile);
   const { data: recent } = useQuery({
     queryKey: ["me", "recent-rating-change"],
     queryFn: () => fetchRecent(),
+    staleTime: 30_000,
+    enabled: !!profile,
+  });
+  const { data: kudos } = useQuery({
+    queryKey: ["kudos", profile?.id],
+    queryFn: () => fetchKudos({ data: { user_id: profile!.id } }),
     staleTime: 30_000,
     enabled: !!profile,
   });
