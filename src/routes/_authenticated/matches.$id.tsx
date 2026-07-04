@@ -416,6 +416,9 @@ function MatchDetail() {
             </div>
           </section>
         )
+      )}
+
+
 
       {isAccepted && (
         <>
