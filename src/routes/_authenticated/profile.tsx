@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { CalendarClock, LogOut, MapPin, Pencil } from "lucide-react";
+import { CalendarClock, LogOut, MapPin, Pencil, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { ProvisionalBadge } from "@/components/PlayerBits";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { LEVEL_DESCRIPTIONS, decodeCourt } from "@/lib/rating";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -32,6 +33,9 @@ function ProfilePage() {
 
   const photo = profile.photo_url || initialsAvatar(profile.name || "You");
   const provisionalRemaining = Math.max(0, 5 - profile.rated_matches);
+  const levelKey = profile.level ? profile.level.toFixed(1) : null;
+  const levelInfo = levelKey ? LEVEL_DESCRIPTIONS[levelKey] : null;
+  const courts = (profile.preferred_courts ?? []).map(decodeCourt);
 
   return (
     <AppShell>
@@ -40,15 +44,21 @@ function ProfilePage() {
           <img
             src={photo}
             alt={profile.name}
-            className="h-[72px] w-[72px] rounded-full ring-2 ring-background"
+            className="h-[72px] w-[72px] rounded-full object-cover ring-2 ring-background"
           />
           <div className="min-w-0 pt-1">
             <h1 className="truncate font-display text-2xl font-bold text-navy">
               {profile.name || "You"}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {profile.wins}W · {profile.losses}L
+              {profile.wins} {profile.wins === 1 ? "Win" : "Wins"} · {profile.losses}{" "}
+              {profile.losses === 1 ? "Loss" : "Losses"}
             </p>
+            {levelInfo && levelKey && (
+              <p className="mt-1 text-xs font-medium text-navy">
+                {levelInfo.headline} · Level {levelKey}
+              </p>
+            )}
             {profile.provisional && (
               <div className="mt-2">
                 <ProvisionalBadge />
@@ -71,7 +81,7 @@ function ProfilePage() {
               Provisional progress
             </p>
             <p className="mt-1 text-sm text-navy">
-              {profile.rated_matches} of 5 provisional matches played
+              {profile.rated_matches} of 5 rated matches completed
               {provisionalRemaining > 0 && ` · ${provisionalRemaining} to go`}
             </p>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-background">
@@ -90,13 +100,19 @@ function ProfilePage() {
           >
             <Pencil className="h-4 w-4" /> Edit profile
           </Link>
-          <button
-            onClick={signOut}
+          <Link
+            to="/profile/security"
             className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold text-navy hover:bg-secondary"
           >
-            <LogOut className="h-4 w-4" /> Sign out
-          </button>
+            <ShieldCheck className="h-4 w-4" /> Account security
+          </Link>
         </div>
+        <button
+          onClick={signOut}
+          className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-background px-5 py-3 text-sm font-semibold text-navy hover:bg-secondary"
+        >
+          <LogOut className="h-4 w-4" /> Sign out
+        </button>
       </section>
 
       {profile.bio && (
@@ -116,12 +132,19 @@ function ProfilePage() {
               Preferred courts
             </h2>
           </div>
-          {profile.preferred_courts.length ? (
-            <ul className="space-y-1.5 text-sm text-navy">
-              {profile.preferred_courts.map((c) => (
-                <li key={c}>{c}</li>
+          {courts.length ? (
+            <div className="flex flex-wrap gap-1.5">
+              {courts.map((c, i) => (
+                <span
+                  key={`${c.name}-${i}`}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs text-navy"
+                  title={[c.area, c.type, c.canHost ? "Can host" : ""].filter(Boolean).join(" · ")}
+                >
+                  {c.name}
+                  {c.area && <span className="text-muted-foreground">· {c.area}</span>}
+                </span>
               ))}
-            </ul>
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground">None set yet.</p>
           )}
@@ -134,11 +157,16 @@ function ProfilePage() {
             </h2>
           </div>
           {profile.availability.length ? (
-            <ul className="space-y-1.5 text-sm text-navy">
+            <div className="flex flex-wrap gap-1.5">
               {profile.availability.map((a) => (
-                <li key={a}>{a}</li>
+                <span
+                  key={a}
+                  className="inline-flex rounded-full border border-border bg-background px-3 py-1 text-xs text-navy"
+                >
+                  {a}
+                </span>
               ))}
-            </ul>
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground">None set yet.</p>
           )}
