@@ -92,6 +92,10 @@ function MatchDetail() {
   const cancel = useServerFn(cancelMatch);
   const accept = useServerFn(acceptMatch);
   const decline = useServerFn(declineMatch);
+  const submit = useServerFn(submitScore);
+  const confirm = useServerFn(confirmScore);
+  const dispute = useServerFn(disputeScore);
+  const [scoreOpen, setScoreOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["match", id],
@@ -104,6 +108,7 @@ function MatchDetail() {
     qc.invalidateQueries({ queryKey: ["me", "incoming-invites"] });
     qc.invalidateQueries({ queryKey: ["me", "upcoming-matches"] });
     qc.invalidateQueries({ queryKey: ["find", "open-invites"] });
+    qc.invalidateQueries({ queryKey: ["me", "profile"] });
   };
 
   const cancelMutation = useMutation({
@@ -129,6 +134,31 @@ function MatchDetail() {
       invalidateAll();
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not decline"),
+  });
+  const submitMutation = useMutation({
+    mutationFn: submit,
+    onSuccess: () => {
+      toast.success("Score submitted — waiting for opponent confirmation");
+      setScoreOpen(false);
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not submit score"),
+  });
+  const confirmMutation = useMutation({
+    mutationFn: confirm,
+    onSuccess: () => {
+      toast.success("Score confirmed");
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not confirm"),
+  });
+  const disputeMutation = useMutation({
+    mutationFn: dispute,
+    onSuccess: () => {
+      toast("Score disputed — the result is held for review");
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not dispute"),
   });
 
   if (isLoading) {
