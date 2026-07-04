@@ -24,6 +24,14 @@ function ProfilePage() {
   const { data: profile } = useCurrentProfile();
   const router = useRouter();
   const qc = useQueryClient();
+  const fetchRecent = useServerFn(getMyRecentRatingChange);
+  const { data: recent } = useQuery({
+    queryKey: ["me", "recent-rating-change"],
+    queryFn: () => fetchRecent(),
+    staleTime: 30_000,
+    enabled: !!profile,
+  });
+
 
   async function signOut() {
     await qc.cancelQueries();
