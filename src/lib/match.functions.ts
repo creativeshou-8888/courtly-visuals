@@ -27,6 +27,7 @@ const createSchema = z
     { message: "Min rating must be ≤ max rating", path: ["desired_min_rating"] },
   );
 
+export type ScoreSet = { a: number; b: number };
 export type MatchRow = {
   id: string;
   creator_id: string;
@@ -52,7 +53,45 @@ export type MatchRow = {
   message: string | null;
   created_at: string;
   updated_at: string;
+  winner_id: string | null;
+  submitted_by: string | null;
+  submitted_at: string | null;
+  confirmed_at: string | null;
+  score_sets: ScoreSet[] | null;
 };
+
+export function validateTennisSets(sets: ScoreSet[], creatorWon: boolean): string | null {
+  if (!Array.isArray(sets) || sets.length < 2 || sets.length > 3) {
+    return "A best-of-3 match needs 2 or 3 sets";
+  }
+  let aSets = 0;
+  let bSets = 0;
+  for (let i = 0; i < sets.length; i++) {
+    const { a, b } = sets[i];
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0) {
+      return `Set ${i + 1}: enter whole non-negative game counts`;
+    }
+    if (a === b) return `Set ${i + 1} cannot be a tie (${a}-${b})`;
+    const isFinal = i === sets.length - 1 && sets.length === 3;
+    const standard =
+      (a === 6 && b >= 0 && b <= 4) ||
+      (b === 6 && a >= 0 && a <= 4) ||
+      (a === 7 && (b === 5 || b === 6)) ||
+      (b === 7 && (a === 5 || a === 6));
+    const matchTb = isFinal && ((a >= 10 && a - b >= 2) || (b >= 10 && b - a >= 2));
+    if (!standard && !matchTb) {
+      return `Invalid tennis set score: ${a}-${b}`;
+    }
+    if (a > b) aSets++;
+    else bSets++;
+  }
+  if (!((aSets === 2 && bSets <= 1) || (bSets === 2 && aSets <= 1))) {
+    return "A match must be won 2 sets to 0 or 2 sets to 1";
+  }
+  if (creatorWon && aSets < bSets) return "Set scores do not match the selected winner";
+  if (!creatorWon && bSets < aSets) return "Set scores do not match the selected winner";
+  return null;
+}
 
 export const createMatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
