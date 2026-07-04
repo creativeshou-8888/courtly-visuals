@@ -1,12 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, ChevronRight, Trophy, Inbox } from "lucide-react";
+import { Plus, ChevronRight, Trophy, Inbox, CheckCircle2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/PlayerBits";
 import { recentResults } from "@/lib/mock-data";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
-import { listMyOutgoingInvites } from "@/lib/match.functions";
+import {
+  listMyOutgoingInvites,
+  listIncomingInvites,
+  listUpcomingMatches,
+} from "@/lib/match.functions";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
