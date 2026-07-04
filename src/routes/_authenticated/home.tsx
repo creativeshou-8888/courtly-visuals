@@ -224,7 +224,7 @@ function RecentMatches() {
             day: "numeric",
           });
           const score = (m.score_sets ?? [])
-            .map((s) => (m.viewer_is_creator ? `${s.a}–${s.b}` : `${s.b}–${s.a}`))
+            .map((s: { a: number; b: number }) => (m.viewer_is_creator ? `${s.a}–${s.b}` : `${s.b}–${s.a}`))
             .join(", ");
           const change = m.rating_change;
           const changeStr =
