@@ -91,9 +91,14 @@ export function PlayerCard({ player }: { player: Player }) {
         </div>
       </div>
 
-      <button className="mt-4 w-full rounded-full bg-court px-4 py-2.5 text-sm font-semibold text-navy transition-transform active:scale-[0.98]">
+      <Link
+        to="/matches/new"
+        search={{ opponentId: player.id, opponentName: player.name }}
+        className="mt-4 block w-full rounded-full bg-court px-4 py-2.5 text-center text-sm font-semibold text-navy transition-transform active:scale-[0.98]"
+      >
         Invite to match
-      </button>
+      </Link>
+
     </article>
   );
 }

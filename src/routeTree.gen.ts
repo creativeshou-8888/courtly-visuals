@@ -22,6 +22,8 @@ import { Route as AuthenticatedFindRouteImport } from './routes/_authenticated/f
 import { Route as AuthenticatedProfileSecurityRouteImport } from './routes/_authenticated/profile.security'
 import { Route as AuthenticatedProfileEditRouteImport } from './routes/_authenticated/profile.edit'
 import { Route as AuthenticatedPlayersIdRouteImport } from './routes/_authenticated/players.$id'
+import { Route as AuthenticatedMatchesNewRouteImport } from './routes/_authenticated/matches.new'
+import { Route as AuthenticatedMatchesIdRouteImport } from './routes/_authenticated/matches.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -90,6 +92,16 @@ const AuthenticatedPlayersIdRoute = AuthenticatedPlayersIdRouteImport.update({
   path: '/players/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMatchesNewRoute = AuthenticatedMatchesNewRouteImport.update({
+  id: '/matches/new',
+  path: '/matches/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMatchesIdRoute = AuthenticatedMatchesIdRouteImport.update({
+  id: '/matches/$id',
+  path: '/matches/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,6 +113,8 @@ export interface FileRoutesByFullPath {
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
+  '/matches/$id': typeof AuthenticatedMatchesIdRoute
+  '/matches/new': typeof AuthenticatedMatchesNewRoute
   '/players/$id': typeof AuthenticatedPlayersIdRoute
   '/profile/edit': typeof AuthenticatedProfileEditRoute
   '/profile/security': typeof AuthenticatedProfileSecurityRoute
@@ -115,6 +129,8 @@ export interface FileRoutesByTo {
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
+  '/matches/$id': typeof AuthenticatedMatchesIdRoute
+  '/matches/new': typeof AuthenticatedMatchesNewRoute
   '/players/$id': typeof AuthenticatedPlayersIdRoute
   '/profile/edit': typeof AuthenticatedProfileEditRoute
   '/profile/security': typeof AuthenticatedProfileSecurityRoute
@@ -131,6 +147,8 @@ export interface FileRoutesById {
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
+  '/_authenticated/matches/$id': typeof AuthenticatedMatchesIdRoute
+  '/_authenticated/matches/new': typeof AuthenticatedMatchesNewRoute
   '/_authenticated/players/$id': typeof AuthenticatedPlayersIdRoute
   '/_authenticated/profile/edit': typeof AuthenticatedProfileEditRoute
   '/_authenticated/profile/security': typeof AuthenticatedProfileSecurityRoute
@@ -147,6 +165,8 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/onboarding'
     | '/profile'
+    | '/matches/$id'
+    | '/matches/new'
     | '/players/$id'
     | '/profile/edit'
     | '/profile/security'
@@ -161,6 +181,8 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/onboarding'
     | '/profile'
+    | '/matches/$id'
+    | '/matches/new'
     | '/players/$id'
     | '/profile/edit'
     | '/profile/security'
@@ -176,6 +198,8 @@ export interface FileRouteTypes {
     | '/_authenticated/leaderboard'
     | '/_authenticated/onboarding'
     | '/_authenticated/profile'
+    | '/_authenticated/matches/$id'
+    | '/_authenticated/matches/new'
     | '/_authenticated/players/$id'
     | '/_authenticated/profile/edit'
     | '/_authenticated/profile/security'
@@ -282,6 +306,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlayersIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/matches/new': {
+      id: '/_authenticated/matches/new'
+      path: '/matches/new'
+      fullPath: '/matches/new'
+      preLoaderRoute: typeof AuthenticatedMatchesNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/matches/$id': {
+      id: '/_authenticated/matches/$id'
+      path: '/matches/$id'
+      fullPath: '/matches/$id'
+      preLoaderRoute: typeof AuthenticatedMatchesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -304,6 +342,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
+  AuthenticatedMatchesIdRoute: typeof AuthenticatedMatchesIdRoute
+  AuthenticatedMatchesNewRoute: typeof AuthenticatedMatchesNewRoute
   AuthenticatedPlayersIdRoute: typeof AuthenticatedPlayersIdRoute
 }
 
@@ -313,6 +353,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
+  AuthenticatedMatchesIdRoute: AuthenticatedMatchesIdRoute,
+  AuthenticatedMatchesNewRoute: AuthenticatedMatchesNewRoute,
   AuthenticatedPlayersIdRoute: AuthenticatedPlayersIdRoute,
 }
 
