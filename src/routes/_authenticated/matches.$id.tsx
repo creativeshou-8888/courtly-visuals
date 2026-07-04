@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -33,7 +33,10 @@ import {
   submitFeedback,
 } from "@/lib/feedback.functions";
 import { FeedbackForm } from "@/components/FeedbackForm";
+import { BadgeMedal } from "@/components/BadgeMedal";
+import { markKudosSkipped, clearKudosSkipped } from "@/lib/kudos-skipped";
 import { initialsAvatar } from "@/hooks/use-current-profile";
+
 
 export const Route = createFileRoute("/_authenticated/matches/$id")({
   head: () => ({
@@ -184,12 +187,15 @@ function MatchDetail() {
     onSuccess: () => {
       toast.success("Kudos sent");
       setFeedbackOpen(false);
+      clearKudosSkipped(id);
       qc.invalidateQueries({ queryKey: ["match", id, "my-feedback"] });
       qc.invalidateQueries({ queryKey: ["kudos"] });
       qc.invalidateQueries({ queryKey: ["leaderboard", "badges"] });
+      qc.invalidateQueries({ queryKey: ["me", "recent-matches"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not send feedback"),
   });
+
 
   if (isLoading) {
     return (
@@ -361,62 +367,21 @@ function MatchDetail() {
       )}
 
       {isConfirmed && match.match_type === "rated" && match.opponent_id && (
-        myFeedback ? (
-          <section className="mt-4 rounded-3xl border border-court/40 bg-court/10 p-5">
-            <p className="text-sm font-semibold text-navy">Kudos sent ✓</p>
-            {myFeedback.badges.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {myFeedback.badges.map((b) => (
-                  <span
-                    key={b}
-                    className="inline-flex rounded-full bg-navy px-3 py-1 text-[11px] font-semibold text-primary-foreground"
-                  >
-                    {b}
-                  </span>
-                ))}
-              </div>
-            )}
-            {myFeedback.note && (
-              <p className="mt-2 text-sm text-navy">"{myFeedback.note}"</p>
-            )}
-          </section>
-        ) : feedbackOpen ? (
-          <FeedbackForm
-            opponentName={
-              (viewerIsCreator ? opponent?.name : creator?.name) ?? "your opponent"
-            }
-            submitting={feedbackMutation.isPending}
-            onCancel={() => {
-              setFeedbackOpen(false);
-              setFeedbackSkipped(true);
-            }}
-            onSubmit={(badges, note) =>
-              feedbackMutation.mutate({ data: { match_id: id, badges, note } })
-            }
-          />
-        ) : feedbackSkipped ? null : (
-          <section className="mt-4 rounded-3xl border border-border bg-card p-5">
-            <p className="text-sm font-semibold text-navy">Give your opponent some kudos?</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Pick up to 3 badges and leave an optional note.
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setFeedbackOpen(true)}
-                className="rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-primary-foreground"
-              >
-                Give feedback
-              </button>
-              <button
-                onClick={() => setFeedbackSkipped(true)}
-                className="rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold text-navy"
-              >
-                Skip for now
-              </button>
-            </div>
-          </section>
-        )
+        <KudosBlock
+          matchId={id}
+          opponentName={(viewerIsCreator ? opponent?.name : creator?.name) ?? "your opponent"}
+          myFeedback={myFeedback}
+          feedbackOpen={feedbackOpen}
+          feedbackSkipped={feedbackSkipped}
+          setFeedbackOpen={setFeedbackOpen}
+          setFeedbackSkipped={setFeedbackSkipped}
+          submitting={feedbackMutation.isPending}
+          onSubmit={(badges, note) =>
+            feedbackMutation.mutate({ data: { match_id: id, badges, note } })
+          }
+        />
       )}
+
 
 
 
@@ -584,3 +549,103 @@ function MatchDetail() {
     </AppShell>
   );
 }
+
+type MyFeedback = { id: string; badges: string[]; note: string | null; created_at: string } | null | undefined;
+
+function KudosBlock({
+  matchId,
+  opponentName,
+  myFeedback,
+  feedbackOpen,
+  feedbackSkipped,
+  setFeedbackOpen,
+  setFeedbackSkipped,
+  submitting,
+  onSubmit,
+}: {
+  matchId: string;
+  opponentName: string;
+  myFeedback: MyFeedback;
+  feedbackOpen: boolean;
+  feedbackSkipped: boolean;
+  setFeedbackOpen: (v: boolean) => void;
+  setFeedbackSkipped: (v: boolean) => void;
+  submitting: boolean;
+  onSubmit: (badges: string[], note: string | null) => void;
+}) {
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-open when navigated with #kudos
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash === "#kudos" && !myFeedback && !feedbackOpen) {
+      clearKudosSkipped(matchId);
+      setFeedbackSkipped(false);
+      setFeedbackOpen(true);
+      setTimeout(() => {
+        sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+    }
+  }, [matchId, myFeedback]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div ref={sectionRef} id="kudos">
+      {myFeedback ? (
+        <section className="mt-4 rounded-3xl border border-court/40 bg-court/10 p-5">
+          <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy">
+            Kudos sent to {opponentName}
+            <CheckCircle2 className="h-4 w-4 text-navy" />
+          </p>
+          {myFeedback.badges.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {myFeedback.badges.map((b) => (
+                <BadgeMedal key={b} name={b} size="sm" />
+              ))}
+            </div>
+          )}
+          {myFeedback.note && (
+            <blockquote className="mt-3 rounded-2xl bg-background/70 p-3 text-sm italic text-navy">
+              "{myFeedback.note}"
+            </blockquote>
+          )}
+        </section>
+      ) : feedbackOpen ? (
+        <FeedbackForm
+          opponentName={opponentName}
+          submitting={submitting}
+          onCancel={() => {
+            markKudosSkipped(matchId);
+            setFeedbackOpen(false);
+            setFeedbackSkipped(true);
+          }}
+          onSubmit={onSubmit}
+        />
+      ) : feedbackSkipped ? null : (
+        <section className="mt-4 rounded-3xl border border-court/40 bg-court/10 p-5">
+          <p className="text-sm font-semibold text-navy">Give {opponentName} some kudos?</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Pick up to 3 achievement badges and leave an optional note.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setFeedbackOpen(true)}
+              className="rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+            >
+              Give kudos
+            </button>
+            <button
+              onClick={() => {
+                markKudosSkipped(matchId);
+                setFeedbackSkipped(true);
+              }}
+              className="rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold text-navy"
+            >
+              Skip for now
+            </button>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Award, Check, X } from "lucide-react";
+import { Award, X } from "lucide-react";
 import { BADGE_OPTIONS } from "@/lib/feedback.functions";
+import { BadgeMedal } from "@/components/BadgeMedal";
 
 type Props = {
   opponentName: string;
@@ -38,30 +39,23 @@ export function FeedbackForm({ opponentName, submitting, onCancel, onSubmit }: P
         </h2>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Pick up to 3 badges and leave an optional note.
+        Pick up to 3 achievement badges and leave an optional note.
       </p>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
         {BADGE_OPTIONS.map((badge) => {
           const on = selected.includes(badge);
           const disabled = !on && selected.length >= 3;
           return (
-            <button
+            <BadgeMedal
               key={badge}
-              type="button"
-              onClick={() => toggle(badge)}
+              name={badge}
+              size="md"
+              selected={on}
               disabled={disabled}
-              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                on
-                  ? "border-navy bg-navy text-primary-foreground"
-                  : disabled
-                    ? "border-border bg-background text-muted-foreground opacity-50"
-                    : "border-border bg-background text-navy hover:bg-secondary"
-              }`}
-            >
-              {on && <Check className="h-3 w-3" />}
-              {badge}
-            </button>
+              interactive
+              onClick={() => !disabled && toggle(badge)}
+            />
           );
         })}
       </div>

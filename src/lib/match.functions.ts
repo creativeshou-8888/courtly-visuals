@@ -456,6 +456,7 @@ export type RecentMatch = {
   opponent: { id: string; name: string; photo_url: string | null } | null;
   rating_change: number | null;
   viewer_is_creator: boolean;
+  has_feedback: boolean;
 };
 
 export const listMyRecentMatches = createServerFn({ method: "GET" })
@@ -486,6 +487,18 @@ export const listMyRecentMatches = createServerFn({ method: "GET" })
         .in("id", oppIds);
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
+
+    const matchIds = rows.map((r) => r.id);
+    const feedbackByMatch = new Set<string>();
+    if (matchIds.length) {
+      const { data: fb } = await (context.supabase as any)
+        .from("post_match_feedback")
+        .select("match_id")
+        .eq("giver_id", context.userId)
+        .in("match_id", matchIds);
+      for (const f of (fb ?? []) as any[]) feedbackByMatch.add(f.match_id);
+    }
+
     return rows.map((r) => {
       const viewerIsCreator = r.creator_id === context.userId;
       const oppId = viewerIsCreator ? r.opponent_id : r.creator_id;
@@ -504,7 +517,9 @@ export const listMyRecentMatches = createServerFn({ method: "GET" })
         opponent: oppId ? profiles[oppId] ?? null : null,
         rating_change: change,
         viewer_is_creator: viewerIsCreator,
+        has_feedback: feedbackByMatch.has(r.id),
       } satisfies RecentMatch;
     });
   });
+
 

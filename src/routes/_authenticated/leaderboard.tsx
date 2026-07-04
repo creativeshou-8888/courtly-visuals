@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { ProvisionalBadge } from "@/components/PlayerBits";
 import { getLeaderboard } from "@/lib/match.functions";
 import { getBadgeLeaderboard } from "@/lib/feedback.functions";
-import { Award } from "lucide-react";
+import { getBadgeMeta } from "@/lib/badges";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 
 export const Route = createFileRoute("/_authenticated/leaderboard")({
@@ -204,42 +204,49 @@ function BadgesTab({
   }
   return (
     <div className="space-y-4">
-      {data.map((cat) => (
-        <section key={cat.badge} className="rounded-3xl border border-border bg-card p-5">
-          <div className="mb-3 flex items-center gap-2 text-navy">
-            <Award className="h-4 w-4" />
-            <h2 className="font-display text-sm font-semibold uppercase tracking-wider">
-              {cat.badge}
-            </h2>
-          </div>
-          {cat.players.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No awards yet.</p>
-          ) : (
-            <ol className="space-y-1.5">
-              {cat.players.map((p, i) => (
-                <li
-                  key={p.id}
-                  className="grid grid-cols-[1.75rem_auto_minmax(0,1fr)_auto] items-center gap-2"
-                >
-                  <span className="grid h-6 w-6 place-items-center rounded-full bg-secondary text-[11px] font-bold text-navy">
-                    {i + 1}
-                  </span>
-                  <img
-                    src={p.photo_url || initialsAvatar(p.name)}
-                    alt=""
-                    className="h-7 w-7 rounded-full object-cover"
-                  />
-                  <p className="truncate text-sm text-navy">{p.name}</p>
-                  <span className="rounded-full bg-navy px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
-                    ×{p.count}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
-      ))}
+      {data.map((cat) => {
+        const meta = getBadgeMeta(cat.badge);
+        const Icon = meta.icon;
+        return (
+          <section key={cat.badge} className="rounded-3xl border border-border bg-card p-5">
+            <div className="mb-3 flex items-center gap-3">
+              <div className={`grid h-10 w-10 place-items-center rounded-2xl ${meta.accentBg}`}>
+                <Icon className={`h-5 w-5 ${meta.accent}`} strokeWidth={2.25} />
+              </div>
+              <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-navy">
+                {cat.badge}
+              </h2>
+            </div>
+            {cat.players.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No awards yet.</p>
+            ) : (
+              <ol className="space-y-1.5">
+                {cat.players.map((p, i) => (
+                  <li
+                    key={p.id}
+                    className="grid grid-cols-[1.75rem_auto_minmax(0,1fr)_auto] items-center gap-2"
+                  >
+                    <span className="grid h-6 w-6 place-items-center rounded-full bg-secondary text-[11px] font-bold text-navy">
+                      {i + 1}
+                    </span>
+                    <img
+                      src={p.photo_url || initialsAvatar(p.name)}
+                      alt=""
+                      className="h-7 w-7 rounded-full object-cover"
+                    />
+                    <p className="truncate text-sm text-navy">{p.name}</p>
+                    <span className="rounded-full bg-navy px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+                      ×{p.count}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }
+
 
