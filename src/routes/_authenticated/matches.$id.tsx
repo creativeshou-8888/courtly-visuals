@@ -259,8 +259,9 @@ function MatchDetail() {
   const isConfirmed = match.status === "confirmed";
   const isDisputed = match.status === "disputed";
   const canEnterScore = isAccepted && isPastScheduled && match.opponent_id != null;
-  const isSubmitter = isPending && match.submitted_by === currentUserId;
+  const isSubmitter = (isPending || isDisputed) && match.submitted_by === currentUserId;
   const canConfirmOrDispute = isPending && !isSubmitter;
+  const canResolveDispute = isDisputed && isSubmitter;
 
   const winnerName =
     match.winner_id === match.creator_id
