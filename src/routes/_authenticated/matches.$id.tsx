@@ -100,6 +100,7 @@ function PersonRow({ label, name, photo }: { label: string; name: string; photo:
 function MatchDetail() {
   const { id } = Route.useParams();
   const router = useRouter();
+  const { data: myProfile } = useCurrentProfile();
   const qc = useQueryClient();
   const fetchMatch = useServerFn(getMatch);
   const cancel = useServerFn(cancelMatch);
