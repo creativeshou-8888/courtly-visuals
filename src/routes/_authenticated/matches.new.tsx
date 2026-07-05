@@ -128,10 +128,41 @@ function NewMatchPage() {
 
       <div className="mb-4">
         <h1 className="font-display text-2xl font-bold text-navy">Create match</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Singles match invite</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isDoubles ? "Doubles match invite" : "Singles match invite"}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Format */}
+        <section className="rounded-3xl border border-border bg-card p-5">
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Format</h2>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setFormat("singles")}
+              className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ${format === "singles" ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
+            >
+              <UserIcon className="h-4 w-4" /> Singles · 1 vs 1
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormat("doubles")}
+              className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ${format === "doubles" ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
+            >
+              <Users className="h-4 w-4" /> Doubles · 2 vs 2
+            </button>
+          </div>
+          {isDoubles && (
+            <div className="mt-3 rounded-2xl border border-dashed border-court/50 bg-court/10 p-3">
+              <p className="text-sm font-semibold text-navy">Doubles match setup coming next</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Partner and team selection isn't available yet. Switch to Singles to create a match now.
+              </p>
+            </div>
+          )}
+        </section>
+
         {/* Who */}
         <section className="rounded-3xl border border-border bg-card p-5">
           <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Who</h2>
