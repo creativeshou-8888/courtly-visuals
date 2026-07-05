@@ -26,6 +26,8 @@ import {
   declineMatch,
   disputeScore,
   getMatch,
+  joinDoublesMatch,
+  listMatchParticipants,
   resubmitScore,
   submitScore,
   type ScoreSet,
