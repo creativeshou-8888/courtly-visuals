@@ -45,6 +45,7 @@ const createSchema = z
 
 export type ScoreSet = { a: number; b: number };
 export type MatchFormat = "singles" | "doubles";
+export type DoublesStyle = "standard" | "rotating";
 export type MatchRow = {
   id: string;
   creator_id: string;
@@ -54,6 +55,9 @@ export type MatchRow = {
   court_booked: boolean;
   match_type: "rated" | "friendly";
   format: MatchFormat;
+  doubles_style: DoublesStyle | null;
+  max_players: number;
+  partner_id: string | null;
   status:
     | "open"
     | "invited"
