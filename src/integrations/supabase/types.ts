@@ -25,6 +25,7 @@ export type Database = {
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
+          format: string
           id: string
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
@@ -48,6 +49,7 @@ export type Database = {
           date_time: string
           desired_max_rating?: number | null
           desired_min_rating?: number | null
+          format?: string
           id?: string
           match_type: Database["public"]["Enums"]["match_type"]
           message?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           date_time?: string
           desired_max_rating?: number | null
           desired_min_rating?: number | null
+          format?: string
           id?: string
           match_type?: Database["public"]["Enums"]["match_type"]
           message?: string | null
@@ -316,6 +319,7 @@ export type Database = {
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
+          format: string
           id: string
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
@@ -348,6 +352,7 @@ export type Database = {
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
+          format: string
           id: string
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
@@ -417,6 +422,7 @@ export type Database = {
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
+          format: string
           id: string
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
@@ -478,6 +484,7 @@ export type Database = {
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
+          format: string
           id: string
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
@@ -510,6 +517,7 @@ export type Database = {
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
+          format: string
           id: string
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
@@ -607,6 +615,7 @@ export type Database = {
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
+          format: string
           id: string
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
@@ -657,6 +666,7 @@ export type Database = {
           date_time: string
           desired_max_rating: number | null
           desired_min_rating: number | null
+          format: string
           id: string
           match_type: Database["public"]["Enums"]["match_type"]
           message: string | null
