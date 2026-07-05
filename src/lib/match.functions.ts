@@ -118,20 +118,24 @@ export const createMatch = createServerFn({ method: "POST" })
     if (data.opponent_id === context.userId) {
       throw new Error("You cannot invite yourself");
     }
-    if (data.format === "doubles") {
-      throw new Error("Doubles match setup is coming next");
+    if (data.partner_id === context.userId) {
+      throw new Error("Partner cannot be yourself");
     }
-    const status = data.opponent_id ? "invited" : "open";
-    const payload = {
+    const isDoubles = data.format === "doubles";
+    const status = isDoubles ? "open" : data.opponent_id ? "invited" : "open";
+    const payload: any = {
       creator_id: context.userId,
-      opponent_id: data.opponent_id,
+      opponent_id: isDoubles ? null : data.opponent_id,
       date_time: data.date_time,
       court_location: data.court_location,
       court_booked: data.court_booked,
       match_type: data.match_type,
       format: data.format,
-      desired_min_rating: data.opponent_id ? null : data.desired_min_rating,
-      desired_max_rating: data.opponent_id ? null : data.desired_max_rating,
+      doubles_style: isDoubles ? data.doubles_style : null,
+      max_players: isDoubles ? data.max_players : 2,
+      partner_id: isDoubles && data.doubles_style === "standard" ? data.partner_id : null,
+      desired_min_rating: isDoubles || data.opponent_id ? null : data.desired_min_rating,
+      desired_max_rating: isDoubles || data.opponent_id ? null : data.desired_max_rating,
       message: data.message,
       status,
     };
@@ -141,7 +145,69 @@ export const createMatch = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
+
+    if (isDoubles) {
+      const { error: seedErr } = await (context.supabase as any).rpc("seed_doubles_participants", {
+        _id: row.id,
+        _partner_id: payload.partner_id ?? null,
+      });
+      if (seedErr) throw new Error(seedErr.message);
+    }
     return row as MatchRow;
+  });
+
+export const joinDoublesMatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("join_doubles_match", { _id: data.id });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+
+export const listMatchParticipants = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: parts, error } = await (context.supabase as any)
+      .from("match_participants")
+      .select("user_id, created_at")
+      .eq("match_id", data.id)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    const ids = (parts ?? []).map((p: any) => p.user_id);
+    let profiles: Record<string, { id: string; name: string; photo_url: string | null; current_rating: number | null }> = {};
+    if (ids.length) {
+      const { data: profs } = await (context.supabase as any)
+        .from("profiles")
+        .select("id,name,photo_url,current_rating")
+        .in("id", ids);
+      for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
+    }
+    return (parts ?? []).map((p: any) => ({
+      user_id: p.user_id,
+      joined_at: p.created_at,
+      profile: profiles[p.user_id] ?? null,
+    }));
+  });
+
+export const searchPlayers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ query: z.string().trim().max(80).default("") }).parse(input))
+  .handler(async ({ context, data }) => {
+    let q = (context.supabase as any)
+      .from("profiles")
+      .select("id,name,photo_url,current_rating")
+      .eq("onboarded", true)
+      .neq("id", context.userId)
+      .order("name", { ascending: true })
+      .limit(10);
+    if (data.query.length > 0) {
+      q = q.ilike("name", `%${data.query.replace(/[%_]/g, "")}%`);
+    }
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as { id: string; name: string; photo_url: string | null; current_rating: number | null }[];
   });
 
 export const getMatch = createServerFn({ method: "GET" })
