@@ -402,14 +402,63 @@ function MatchDetail() {
                     </p>
                   </div>
                 ))}
-                {Array.from({ length: remainingSpots }).map((_, i) => (
-                  <div key={`empty-${i}`} className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-background p-2.5">
-                    <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-muted-foreground">
-                      {joinedCount + i + 1}
+                {guestList.map((g, i) => (
+                  <div key={g.id} className="flex items-center gap-3 rounded-2xl border border-navy/20 bg-navy/5 p-2.5">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-navy">
+                      {partsList.length + i + 1}
                     </span>
-                    <p className="text-sm text-muted-foreground">Open spot</p>
+                    <span className="grid h-8 w-8 place-items-center rounded-full bg-court/40 text-navy">
+                      <UserIcon className="h-4 w-4" />
+                    </span>
+                    <p className="min-w-0 flex-1 truncate text-sm font-semibold text-navy">
+                      {g.name}
+                      <span className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">· guest</span>
+                    </p>
+                    {canManageGuests && (
+                      <button
+                        type="button"
+                        onClick={() => removeGuestMutation.mutate({ data: { guest_id: g.id } })}
+                        disabled={removeGuestMutation.isPending}
+                        aria-label={`Remove ${g.name}`}
+                        className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 ))}
+                {Array.from({ length: remainingSpots }).map((_, i) => {
+                  const slotNum = partsList.length + guestCount + i + 1;
+                  if (canManageGuests) {
+                    return (
+                      <button
+                        key={`empty-${i}`}
+                        type="button"
+                        onClick={() => setGuestDialogOpen(true)}
+                        className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-court/60 bg-court/5 p-2.5 text-left transition-colors hover:bg-court/15"
+                      >
+                        <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-muted-foreground">
+                          {slotNum}
+                        </span>
+                        <span className="grid h-8 w-8 place-items-center rounded-full bg-court text-navy">
+                          <UserPlus className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0 flex-1 text-sm font-semibold text-navy">
+                          Open spot
+                          <span className="ml-1 text-xs font-normal text-muted-foreground">— tap to add a friend</span>
+                        </span>
+                      </button>
+                    );
+                  }
+                  return (
+                    <div key={`empty-${i}`} className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-background p-2.5">
+                      <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-muted-foreground">
+                        {slotNum}
+                      </span>
+                      <p className="text-sm text-muted-foreground">Open spot</p>
+                    </div>
+                  );
+                })}
               </div>
             </>
           ) : (
