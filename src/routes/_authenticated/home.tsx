@@ -86,11 +86,14 @@ function OutgoingInvites() {
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {when} · {m.court_location}
                   </p>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
-                    <span className="text-navy">
-                      {m.status === "open" ? "Open" : m.status === "invited" ? "Invited" : m.status}
+                  <p className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span>
+                      {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
+                      <span className="text-navy">
+                        {m.status === "open" ? "Open" : m.status === "invited" ? "Invited" : m.status}
+                      </span>
                     </span>
+                    <FormatBadge format={(m as any).format} />
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
