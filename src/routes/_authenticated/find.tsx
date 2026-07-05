@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { ChevronRight, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { PlayerCard } from "@/components/PlayerBits";
+import { FormatBadge, normalizeFormat } from "@/components/FormatBadge";
 import { players } from "@/lib/mock-data";
 import { listOpenInvitesForMe } from "@/lib/match.functions";
 import { initialsAvatar } from "@/hooks/use-current-profile";
