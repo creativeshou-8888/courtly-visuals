@@ -596,11 +596,19 @@ function MatchDetail() {
       )}
 
       {isDoubles && isFull && !isConfirmed && (
-        <section className="mt-4 rounded-3xl border border-dashed border-court/50 bg-court/10 p-5">
-          <p className="text-sm font-semibold text-navy">Match full — {joinedCount}/{maxPlayers} players</p>
+        <section className="mt-4 rounded-3xl border border-court/40 bg-court/10 p-5">
+          <div className="flex items-center gap-2 text-navy">
+            <CheckCircle2 className="h-4 w-4" />
+            <p className="text-sm font-semibold">Match confirmed</p>
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Doubles scoring coming next. You'll be able to enter the result here in an upcoming update.
+            All player spots are filled — {joinedCount}/{maxPlayers} players.
           </p>
+          {isPastScheduled && (
+            <p className="mt-3 rounded-2xl border border-dashed border-border bg-background/70 p-3 text-xs text-muted-foreground">
+              Doubles scoring coming next. You'll be able to enter the result here in an upcoming update.
+            </p>
+          )}
         </section>
       )}
 
