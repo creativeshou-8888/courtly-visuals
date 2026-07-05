@@ -225,6 +225,23 @@ function MatchDetail() {
     onError: (e: any) => toast.error(e?.message ?? "Could not send feedback"),
   });
 
+  const isDoublesMatch = ((data?.match as any)?.format ?? "singles") === "doubles";
+  const { data: participants } = useQuery({
+    queryKey: ["match", id, "participants"],
+    queryFn: () => fetchParticipants({ data: { id } }),
+    enabled: !!data && isDoublesMatch,
+    staleTime: 15_000,
+  });
+  const joinMutation = useMutation({
+    mutationFn: joinDoubles,
+    onSuccess: () => {
+      toast.success("Joined match");
+      qc.invalidateQueries({ queryKey: ["match", id, "participants"] });
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not join match"),
+  });
+
 
   if (isLoading) {
     return (
