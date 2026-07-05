@@ -12,6 +12,9 @@ const createSchema = z
     court_booked: z.boolean(),
     match_type: z.enum(["rated", "friendly"]),
     format: z.enum(["singles", "doubles"]).default("singles"),
+    doubles_style: z.enum(["standard", "rotating"]).nullable().default(null),
+    max_players: z.number().int().refine((v) => [2, 4, 5, 6].includes(v)).default(2),
+    partner_id: uuid.nullable().default(null),
     desired_min_rating: z.number().int().min(0).max(4000).nullable(),
     desired_max_rating: z.number().int().min(0).max(4000).nullable(),
     message: z.string().trim().max(500).nullable(),
@@ -26,6 +29,18 @@ const createSchema = z
       d.desired_max_rating == null ||
       d.desired_min_rating <= d.desired_max_rating,
     { message: "Min rating must be ≤ max rating", path: ["desired_min_rating"] },
+  )
+  .refine(
+    (d) => {
+      if (d.format === "singles") {
+        return d.doubles_style == null && d.max_players === 2 && d.partner_id == null;
+      }
+      if (d.doubles_style === "standard") return d.max_players === 4;
+      if (d.doubles_style === "rotating")
+        return (d.max_players === 5 || d.max_players === 6) && d.partner_id == null && d.match_type === "friendly";
+      return false;
+    },
+    { message: "Invalid doubles configuration", path: ["doubles_style"] },
   );
 
 export type ScoreSet = { a: number; b: number };
