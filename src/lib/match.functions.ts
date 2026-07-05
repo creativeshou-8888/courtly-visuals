@@ -418,15 +418,39 @@ export const listIncomingInvites = createServerFn({ method: "GET" })
 export const listUpcomingMatches = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await (context.supabase as any)
+    // Include matches where user is creator, opponent, or a doubles participant
+    const { data: myParts } = await (context.supabase as any)
+      .from("match_participants")
+      .select("match_id")
+      .eq("user_id", context.userId);
+    const partIds = ((myParts ?? []) as any[]).map((p) => p.match_id);
+
+    const seen = new Set<string>();
+    const collected: MatchRow[] = [];
+    const { data: mine, error } = await (context.supabase as any)
       .from("matches")
       .select("*")
       .in("status", ["accepted", "score_pending"])
       .or(`creator_id.eq.${context.userId},opponent_id.eq.${context.userId}`)
       .order("date_time", { ascending: true });
     if (error) throw new Error(error.message);
-    const rows = (data ?? []) as MatchRow[];
-    const ids = Array.from(new Set(rows.flatMap((r) => [r.creator_id, r.opponent_id]).filter(Boolean) as string[]));
+    for (const r of (mine ?? []) as MatchRow[]) {
+      if (!seen.has(r.id)) { seen.add(r.id); collected.push(r); }
+    }
+    if (partIds.length) {
+      const { data: joined, error: e2 } = await (context.supabase as any)
+        .from("matches")
+        .select("*")
+        .in("id", partIds)
+        .in("status", ["accepted", "score_pending"]);
+      if (e2) throw new Error(e2.message);
+      for (const r of (joined ?? []) as MatchRow[]) {
+        if (!seen.has(r.id)) { seen.add(r.id); collected.push(r); }
+      }
+    }
+    collected.sort((a, b) => a.date_time.localeCompare(b.date_time));
+
+    const ids = Array.from(new Set(collected.flatMap((r) => [r.creator_id, r.opponent_id]).filter(Boolean) as string[]));
     const profiles: Record<string, { id: string; name: string; photo_url: string | null }> = {};
     if (ids.length) {
       const { data: profs } = await (context.supabase as any)
@@ -435,7 +459,7 @@ export const listUpcomingMatches = createServerFn({ method: "GET" })
         .in("id", ids);
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
-    return rows.map((r) => ({
+    return collected.map((r) => ({
       ...r,
       creator: profiles[r.creator_id] ?? null,
       opponent: r.opponent_id ? profiles[r.opponent_id] ?? null : null,
