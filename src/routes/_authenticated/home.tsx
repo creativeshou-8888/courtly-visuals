@@ -194,13 +194,16 @@ function UpcomingMatches() {
               <p className="mt-0.5 truncate text-xs text-muted-foreground">
                 {formatWhen(m.date_time)} · {m.court_location}
               </p>
-              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-navy">
-                {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
-                {m.status === "score_pending"
-                  ? "Score pending"
-                  : new Date(m.date_time).getTime() <= Date.now()
-                    ? "Ready to score"
-                    : "Accepted"}
+              <p className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-navy">
+                <span>
+                  {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
+                  {m.status === "score_pending"
+                    ? "Score pending"
+                    : new Date(m.date_time).getTime() <= Date.now()
+                      ? "Ready to score"
+                      : "Accepted"}
+                </span>
+                <FormatBadge format={(m as any).format} />
               </p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
