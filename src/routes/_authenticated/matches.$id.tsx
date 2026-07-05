@@ -614,7 +614,7 @@ function MatchDetail() {
 
 
 
-      {isAccepted && (
+      {isAccepted && !isDoubles && (
         <>
           {canEnterScore ? (
             !scoreOpen ? (
