@@ -483,6 +483,42 @@ function MatchDetail() {
         />
       )}
 
+      {isDoubles && canJoinDoubles && (
+        <section className="mt-4 rounded-3xl border border-court/40 bg-court/10 p-5">
+          <div className="flex items-center gap-2 text-navy">
+            <UserIcon className="h-4 w-4" />
+            <p className="text-sm font-semibold">Join this doubles match</p>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {remainingSpots} {remainingSpots === 1 ? "spot" : "spots"} left · {joinedCount}/{maxPlayers} players
+          </p>
+          <button
+            onClick={() => joinMutation.mutate({ data: { id } })}
+            disabled={joinMutation.isPending}
+            className="mt-3 w-full rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+          >
+            {joinMutation.isPending ? "Joining…" : "Join match"}
+          </button>
+        </section>
+      )}
+
+      {isDoubles && viewerIsParticipant && match.status === "open" && (
+        <section className="mt-4 rounded-3xl border border-border bg-card p-5">
+          <p className="text-sm font-semibold text-navy">You're in this match</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Waiting for {remainingSpots} more {remainingSpots === 1 ? "player" : "players"} to join.
+          </p>
+        </section>
+      )}
+
+      {isDoubles && isFull && !isConfirmed && (
+        <section className="mt-4 rounded-3xl border border-dashed border-court/50 bg-court/10 p-5">
+          <p className="text-sm font-semibold text-navy">Match full — {joinedCount}/{maxPlayers} players</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Doubles scoring coming next. You'll be able to enter the result here in an upcoming update.
+          </p>
+        </section>
+      )}
 
 
 
