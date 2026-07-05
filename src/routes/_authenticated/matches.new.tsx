@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, MapPin, Plus, User as UserIcon } from "lucide-react";
+import { ArrowLeft, MapPin, Plus, User as UserIcon, Users } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentProfile } from "@/hooks/use-current-profile";
 import { createMatch, getPlayerSummary } from "@/lib/match.functions";
