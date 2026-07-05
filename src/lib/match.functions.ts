@@ -438,11 +438,12 @@ export const listUpcomingMatches = createServerFn({ method: "GET" })
       if (!seen.has(r.id)) { seen.add(r.id); collected.push(r); }
     }
     if (partIds.length) {
+      // Include doubles matches still "open" (waiting for more players) that I joined
       const { data: joined, error: e2 } = await (context.supabase as any)
         .from("matches")
         .select("*")
         .in("id", partIds)
-        .in("status", ["accepted", "score_pending"]);
+        .in("status", ["open", "accepted", "score_pending"]);
       if (e2) throw new Error(e2.message);
       for (const r of (joined ?? []) as MatchRow[]) {
         if (!seen.has(r.id)) { seen.add(r.id); collected.push(r); }
@@ -459,10 +460,25 @@ export const listUpcomingMatches = createServerFn({ method: "GET" })
         .in("id", ids);
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
+
+    // Participant counts for doubles rows
+    const doublesIds = collected.filter((r) => r.format === "doubles").map((r) => r.id);
+    const countByMatch: Record<string, number> = {};
+    if (doublesIds.length) {
+      const { data: parts } = await (context.supabase as any)
+        .from("match_participants")
+        .select("match_id,user_id")
+        .in("match_id", doublesIds);
+      for (const p of (parts ?? []) as any[]) {
+        countByMatch[p.match_id] = (countByMatch[p.match_id] ?? 0) + 1;
+      }
+    }
+
     return collected.map((r) => ({
       ...r,
       creator: profiles[r.creator_id] ?? null,
       opponent: r.opponent_id ? profiles[r.opponent_id] ?? null : null,
+      joined_count: r.format === "doubles" ? (countByMatch[r.id] ?? 0) : null,
     }));
   });
 
