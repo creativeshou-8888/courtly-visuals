@@ -64,6 +64,25 @@ function OpenInvitesNearMe() {
         </h2>
       </div>
 
+      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {(["all", "singles", "doubles"] as const).map((f) => {
+          const label = f === "all" ? "All formats" : f === "singles" ? "Singles" : "Doubles";
+          const active = formatFilter === f;
+          return (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFormatFilter(f)}
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold ${
+                active ? "bg-navy text-primary-foreground" : "border border-border bg-card text-navy"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
       {isLoading ? (
         <div className="rounded-3xl border border-border bg-card p-5 text-sm text-muted-foreground">
           Loading open invites…
