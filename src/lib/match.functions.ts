@@ -359,18 +359,17 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
       }
     }
 
-    // Exclude doubles matches I've already joined, or that are full
-    const notJoinedFull = rows.filter((r) => {
+    // Exclude only full doubles matches; keep matches I already joined (show JOINED state)
+    const notFull = rows.filter((r) => {
       if (r.format !== "doubles") return true;
-      if (myJoined.has(r.id)) return false;
       const joined = countByMatch[r.id] ?? 0;
       return joined < r.max_players;
     });
 
     // Apply rating filter to singles only (doubles rating rules TBD)
     const filtered = myRating == null
-      ? notJoinedFull
-      : notJoinedFull.filter((r) =>
+      ? notFull
+      : notFull.filter((r) =>
           r.format === "doubles" ||
           ((r.desired_min_rating == null || myRating >= r.desired_min_rating) &&
             (r.desired_max_rating == null || myRating <= r.desired_max_rating)),
@@ -389,6 +388,7 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
       ...r,
       creator: profiles[r.creator_id] ?? null,
       joined_count: r.format === "doubles" ? (countByMatch[r.id] ?? 0) : null,
+      viewer_joined: r.format === "doubles" ? myJoined.has(r.id) : false,
     }));
   });
 
