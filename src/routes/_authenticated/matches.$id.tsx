@@ -117,9 +117,13 @@ function MatchDetail() {
   const cancelDisputed = useServerFn(cancelDisputedMatch);
   const joinDoubles = useServerFn(joinDoublesMatch);
   const fetchParticipants = useServerFn(listMatchParticipants);
+  const addGuestFn = useServerFn(addMatchGuest);
+  const removeGuestFn = useServerFn(removeMatchGuest);
   const [scoreOpen, setScoreOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [guestDialogOpen, setGuestDialogOpen] = useState(false);
+  const [guestName, setGuestName] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackSkipped, setFeedbackSkipped] = useState(false);
 
