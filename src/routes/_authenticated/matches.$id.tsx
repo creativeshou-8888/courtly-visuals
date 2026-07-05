@@ -250,6 +250,26 @@ function MatchDetail() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not join match"),
   });
+  const addGuestMutation = useMutation({
+    mutationFn: addGuestFn,
+    onSuccess: () => {
+      toast.success("Guest added");
+      setGuestDialogOpen(false);
+      setGuestName("");
+      qc.invalidateQueries({ queryKey: ["match", id, "participants"] });
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not add guest"),
+  });
+  const removeGuestMutation = useMutation({
+    mutationFn: removeGuestFn,
+    onSuccess: () => {
+      toast.success("Guest removed");
+      qc.invalidateQueries({ queryKey: ["match", id, "participants"] });
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not remove guest"),
+  });
 
 
   if (isLoading) {
