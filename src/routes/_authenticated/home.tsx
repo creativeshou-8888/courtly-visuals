@@ -186,15 +186,17 @@ function UpcomingMatches() {
             ? `${m.creator?.name ?? "Player"}'s doubles match`
             : `${m.creator?.name ?? "Player"} vs ${m.opponent?.name ?? "Player"}`;
           const statusLabel =
-            m.status === "score_pending"
-              ? "Score pending"
-              : m.status === "open"
-                ? remaining != null
-                  ? `Joined · ${joined}/${cap} · ${remaining} ${remaining === 1 ? "spot" : "spots"} left`
-                  : "Joined · waiting for players"
-                : new Date(m.date_time).getTime() <= Date.now()
-                  ? "Ready to score"
-                  : "Accepted";
+            isDoubles && m.status === "accepted"
+              ? `Full · ${joined ?? cap}/${cap}`
+              : m.status === "score_pending"
+                ? "Score pending"
+                : m.status === "open"
+                  ? isDoubles && remaining != null
+                    ? `Joined · ${joined}/${cap} · ${remaining} ${remaining === 1 ? "spot" : "spots"} left`
+                    : "Joined · waiting for players"
+                  : new Date(m.date_time).getTime() <= Date.now()
+                    ? (isDoubles ? "Doubles scoring coming next" : "Ready to score")
+                    : "Accepted";
           return (
             <Link
               key={m.id}
