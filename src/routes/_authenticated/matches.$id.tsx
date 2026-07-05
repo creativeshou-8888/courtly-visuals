@@ -36,6 +36,7 @@ import {
 } from "@/lib/feedback.functions";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { BadgeMedal } from "@/components/BadgeMedal";
+import { FormatBadge } from "@/components/FormatBadge";
 import { markKudosSkipped, clearKudosSkipped } from "@/lib/kudos-skipped";
 import { initialsAvatar } from "@/hooks/use-current-profile";
 
