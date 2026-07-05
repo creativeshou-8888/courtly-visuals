@@ -103,6 +103,9 @@ export const createMatch = createServerFn({ method: "POST" })
     if (data.opponent_id === context.userId) {
       throw new Error("You cannot invite yourself");
     }
+    if (data.format === "doubles") {
+      throw new Error("Doubles match setup is coming next");
+    }
     const status = data.opponent_id ? "invited" : "open";
     const payload = {
       creator_id: context.userId,
@@ -111,6 +114,7 @@ export const createMatch = createServerFn({ method: "POST" })
       court_location: data.court_location,
       court_booked: data.court_booked,
       match_type: data.match_type,
+      format: data.format,
       desired_min_rating: data.opponent_id ? null : data.desired_min_rating,
       desired_max_rating: data.opponent_id ? null : data.desired_max_rating,
       message: data.message,
