@@ -26,6 +26,8 @@ import {
   declineMatch,
   disputeScore,
   getMatch,
+  joinDoublesMatch,
+  listMatchParticipants,
   resubmitScore,
   submitScore,
   type ScoreSet,
@@ -38,7 +40,7 @@ import { FeedbackForm } from "@/components/FeedbackForm";
 import { BadgeMedal } from "@/components/BadgeMedal";
 import { FormatBadge } from "@/components/FormatBadge";
 import { markKudosSkipped, clearKudosSkipped } from "@/lib/kudos-skipped";
-import { initialsAvatar } from "@/hooks/use-current-profile";
+import { initialsAvatar, useCurrentProfile } from "@/hooks/use-current-profile";
 
 
 export const Route = createFileRoute("/_authenticated/matches/$id")({
@@ -98,6 +100,7 @@ function PersonRow({ label, name, photo }: { label: string; name: string; photo:
 function MatchDetail() {
   const { id } = Route.useParams();
   const router = useRouter();
+  const { data: myProfile } = useCurrentProfile();
   const qc = useQueryClient();
   const fetchMatch = useServerFn(getMatch);
   const cancel = useServerFn(cancelMatch);
@@ -108,6 +111,8 @@ function MatchDetail() {
   const dispute = useServerFn(disputeScore);
   const resubmit = useServerFn(resubmitScore);
   const cancelDisputed = useServerFn(cancelDisputedMatch);
+  const joinDoubles = useServerFn(joinDoublesMatch);
+  const fetchParticipants = useServerFn(listMatchParticipants);
   const [scoreOpen, setScoreOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
@@ -221,6 +226,23 @@ function MatchDetail() {
     onError: (e: any) => toast.error(e?.message ?? "Could not send feedback"),
   });
 
+  const isDoublesMatch = ((data?.match as any)?.format ?? "singles") === "doubles";
+  const { data: participants } = useQuery({
+    queryKey: ["match", id, "participants"],
+    queryFn: () => fetchParticipants({ data: { id } }),
+    enabled: !!data && isDoublesMatch,
+    staleTime: 15_000,
+  });
+  const joinMutation = useMutation({
+    mutationFn: joinDoubles,
+    onSuccess: () => {
+      toast.success("Joined match");
+      qc.invalidateQueries({ queryKey: ["match", id, "participants"] });
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not join match"),
+  });
+
 
   if (isLoading) {
     return (
@@ -251,18 +273,29 @@ function MatchDetail() {
   const nowMs = Date.now();
   const isFuture = new Date(match.date_time).getTime() > nowMs;
   const isPastScheduled = new Date(match.date_time).getTime() <= nowMs;
-  const currentUserId = viewerIsCreator ? match.creator_id : match.opponent_id;
+  const isDoubles = ((match as any).format ?? "singles") === "doubles";
+  const maxPlayers: number = (match as any).max_players ?? (isDoubles ? 4 : 2);
+  const doublesStyle: "standard" | "rotating" | null = (match as any).doubles_style ?? null;
+  type Participant = { user_id: string; joined_at: string; profile: { id: string; name: string; photo_url: string | null; current_rating: number | null } | null };
+  const partsList: Participant[] = (participants ?? []) as Participant[];
+  const joinedCount = isDoubles ? partsList.length : 0;
+  const remainingSpots = Math.max(0, maxPlayers - joinedCount);
+  const myId = myProfile?.id;
+  const currentUserId = viewerIsCreator ? match.creator_id : match.opponent_id ?? myId;
+  const viewerIsParticipant = isDoubles && !!myId && partsList.some((p) => p.user_id === myId);
+  const isFull = isDoubles && joinedCount >= maxPlayers;
   const canCancel = viewerIsCreator && (match.status === "open" || match.status === "invited");
-  const canAcceptOpen = !viewerIsCreator && match.status === "open" && isFuture;
-  const canRespondDirect = !viewerIsCreator && match.status === "invited" && isFuture;
+  const canAcceptOpen = !isDoubles && !viewerIsCreator && match.status === "open" && isFuture;
+  const canRespondDirect = !isDoubles && !viewerIsCreator && match.status === "invited" && isFuture;
   const isAccepted = match.status === "accepted";
   const isPending = match.status === "score_pending";
   const isConfirmed = match.status === "confirmed";
   const isDisputed = match.status === "disputed";
-  const canEnterScore = isAccepted && isPastScheduled && match.opponent_id != null;
-  const isSubmitter = (isPending || isDisputed) && match.submitted_by === currentUserId;
-  const canConfirmOrDispute = isPending && !isSubmitter;
-  const canResolveDispute = isDisputed && isSubmitter;
+  const canEnterScore = !isDoubles && isAccepted && isPastScheduled && match.opponent_id != null;
+  const isSubmitter = !isDoubles && (isPending || isDisputed) && match.submitted_by === currentUserId;
+  const canConfirmOrDispute = !isDoubles && isPending && !isSubmitter;
+  const canResolveDispute = !isDoubles && isDisputed && isSubmitter;
+  const canJoinDoubles = isDoubles && match.status === "open" && isFuture && !viewerIsCreator && !viewerIsParticipant && !isFull;
 
   const winnerName =
     match.winner_id === match.creator_id
@@ -302,35 +335,76 @@ function MatchDetail() {
             </h1>
             <p className="mt-1 inline-flex flex-wrap items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
               <span>{match.match_type === "rated" ? "Rated match" : "Friendly match"}</span>
-              <FormatBadge format={(match as any).format} />
+              <FormatBadge format={(match as any).format} doublesStyle={(match as any).doubles_style} />
             </p>
           </div>
           <StatusPill status={match.status} />
         </div>
 
         <div className="mt-5 space-y-3">
-          {creator && <PersonRow label="Creator" name={creator.name} photo={creator.photo_url} />}
-          {match.opponent_id ? (
-            opponent ? (
-              <PersonRow label="Opponent" name={opponent.name} photo={opponent.photo_url} />
-            ) : (
-              <PersonRow label="Opponent" name="Player" photo={null} />
-            )
-          ) : (
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-navy">
-                <UserIcon className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Opponent</p>
-                <p className="text-sm font-semibold text-navy">
-                  Any player
-                  {match.desired_min_rating != null && match.desired_max_rating != null
-                    ? ` · ${match.desired_min_rating}–${match.desired_max_rating}`
-                    : ""}
-                </p>
+          {isDoubles ? (
+            <>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Players · {joinedCount}/{maxPlayers}
+                {remainingSpots > 0 && match.status === "open" && (
+                  <span className="ml-2 text-court">{remainingSpots} {remainingSpots === 1 ? "spot" : "spots"} left</span>
+                )}
+              </p>
+              <div className="space-y-2">
+                {partsList.map((p, i) => (
+                  <div key={p.user_id} className="flex items-center gap-3 rounded-2xl border border-navy/20 bg-navy/5 p-2.5">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-navy">
+                      {i + 1}
+                    </span>
+                    <img
+                      src={p.profile?.photo_url || initialsAvatar(p.profile?.name || "Player")}
+                      alt=""
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                    <p className="min-w-0 flex-1 truncate text-sm font-semibold text-navy">
+                      {p.profile?.name ?? "Player"}
+                      {p.user_id === match.creator_id && (
+                        <span className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">· host</span>
+                      )}
+                    </p>
+                  </div>
+                ))}
+                {Array.from({ length: remainingSpots }).map((_, i) => (
+                  <div key={`empty-${i}`} className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-background p-2.5">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-muted-foreground">
+                      {joinedCount + i + 1}
+                    </span>
+                    <p className="text-sm text-muted-foreground">Open spot</p>
+                  </div>
+                ))}
               </div>
-            </div>
+            </>
+          ) : (
+            <>
+              {creator && <PersonRow label="Creator" name={creator.name} photo={creator.photo_url} />}
+              {match.opponent_id ? (
+                opponent ? (
+                  <PersonRow label="Opponent" name={opponent.name} photo={opponent.photo_url} />
+                ) : (
+                  <PersonRow label="Opponent" name="Player" photo={null} />
+                )
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-navy">
+                    <UserIcon className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Opponent</p>
+                    <p className="text-sm font-semibold text-navy">
+                      Any player
+                      {match.desired_min_rating != null && match.desired_max_rating != null
+                        ? ` · ${match.desired_min_rating}–${match.desired_max_rating}`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -409,6 +483,42 @@ function MatchDetail() {
         />
       )}
 
+      {isDoubles && canJoinDoubles && (
+        <section className="mt-4 rounded-3xl border border-court/40 bg-court/10 p-5">
+          <div className="flex items-center gap-2 text-navy">
+            <UserIcon className="h-4 w-4" />
+            <p className="text-sm font-semibold">Join this doubles match</p>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {remainingSpots} {remainingSpots === 1 ? "spot" : "spots"} left · {joinedCount}/{maxPlayers} players
+          </p>
+          <button
+            onClick={() => joinMutation.mutate({ data: { id } })}
+            disabled={joinMutation.isPending}
+            className="mt-3 w-full rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+          >
+            {joinMutation.isPending ? "Joining…" : "Join match"}
+          </button>
+        </section>
+      )}
+
+      {isDoubles && viewerIsParticipant && match.status === "open" && (
+        <section className="mt-4 rounded-3xl border border-border bg-card p-5">
+          <p className="text-sm font-semibold text-navy">You're in this match</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Waiting for {remainingSpots} more {remainingSpots === 1 ? "player" : "players"} to join.
+          </p>
+        </section>
+      )}
+
+      {isDoubles && isFull && !isConfirmed && (
+        <section className="mt-4 rounded-3xl border border-dashed border-court/50 bg-court/10 p-5">
+          <p className="text-sm font-semibold text-navy">Match full — {joinedCount}/{maxPlayers} players</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Doubles scoring coming next. You'll be able to enter the result here in an upcoming update.
+          </p>
+        </section>
+      )}
 
 
 

@@ -12,6 +12,9 @@ const createSchema = z
     court_booked: z.boolean(),
     match_type: z.enum(["rated", "friendly"]),
     format: z.enum(["singles", "doubles"]).default("singles"),
+    doubles_style: z.enum(["standard", "rotating"]).nullable().default(null),
+    max_players: z.number().int().refine((v) => [2, 4, 5, 6].includes(v)).default(2),
+    partner_id: uuid.nullable().default(null),
     desired_min_rating: z.number().int().min(0).max(4000).nullable(),
     desired_max_rating: z.number().int().min(0).max(4000).nullable(),
     message: z.string().trim().max(500).nullable(),
@@ -26,10 +29,23 @@ const createSchema = z
       d.desired_max_rating == null ||
       d.desired_min_rating <= d.desired_max_rating,
     { message: "Min rating must be ≤ max rating", path: ["desired_min_rating"] },
+  )
+  .refine(
+    (d) => {
+      if (d.format === "singles") {
+        return d.doubles_style == null && d.max_players === 2 && d.partner_id == null;
+      }
+      if (d.doubles_style === "standard") return d.max_players === 4;
+      if (d.doubles_style === "rotating")
+        return (d.max_players === 5 || d.max_players === 6) && d.partner_id == null && d.match_type === "friendly";
+      return false;
+    },
+    { message: "Invalid doubles configuration", path: ["doubles_style"] },
   );
 
 export type ScoreSet = { a: number; b: number };
 export type MatchFormat = "singles" | "doubles";
+export type DoublesStyle = "standard" | "rotating";
 export type MatchRow = {
   id: string;
   creator_id: string;
@@ -39,6 +55,9 @@ export type MatchRow = {
   court_booked: boolean;
   match_type: "rated" | "friendly";
   format: MatchFormat;
+  doubles_style: DoublesStyle | null;
+  max_players: number;
+  partner_id: string | null;
   status:
     | "open"
     | "invited"
@@ -103,20 +122,24 @@ export const createMatch = createServerFn({ method: "POST" })
     if (data.opponent_id === context.userId) {
       throw new Error("You cannot invite yourself");
     }
-    if (data.format === "doubles") {
-      throw new Error("Doubles match setup is coming next");
+    if (data.partner_id === context.userId) {
+      throw new Error("Partner cannot be yourself");
     }
-    const status = data.opponent_id ? "invited" : "open";
-    const payload = {
+    const isDoubles = data.format === "doubles";
+    const status = isDoubles ? "open" : data.opponent_id ? "invited" : "open";
+    const payload: any = {
       creator_id: context.userId,
-      opponent_id: data.opponent_id,
+      opponent_id: isDoubles ? null : data.opponent_id,
       date_time: data.date_time,
       court_location: data.court_location,
       court_booked: data.court_booked,
       match_type: data.match_type,
       format: data.format,
-      desired_min_rating: data.opponent_id ? null : data.desired_min_rating,
-      desired_max_rating: data.opponent_id ? null : data.desired_max_rating,
+      doubles_style: isDoubles ? data.doubles_style : null,
+      max_players: isDoubles ? data.max_players : 2,
+      partner_id: isDoubles && data.doubles_style === "standard" ? data.partner_id : null,
+      desired_min_rating: isDoubles || data.opponent_id ? null : data.desired_min_rating,
+      desired_max_rating: isDoubles || data.opponent_id ? null : data.desired_max_rating,
       message: data.message,
       status,
     };
@@ -126,7 +149,69 @@ export const createMatch = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
+
+    if (isDoubles) {
+      const { error: seedErr } = await (context.supabase as any).rpc("seed_doubles_participants", {
+        _id: row.id,
+        _partner_id: payload.partner_id ?? null,
+      });
+      if (seedErr) throw new Error(seedErr.message);
+    }
     return row as MatchRow;
+  });
+
+export const joinDoublesMatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("join_doubles_match", { _id: data.id });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+
+export const listMatchParticipants = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: parts, error } = await (context.supabase as any)
+      .from("match_participants")
+      .select("user_id, created_at")
+      .eq("match_id", data.id)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    const ids = (parts ?? []).map((p: any) => p.user_id);
+    let profiles: Record<string, { id: string; name: string; photo_url: string | null; current_rating: number | null }> = {};
+    if (ids.length) {
+      const { data: profs } = await (context.supabase as any)
+        .from("profiles")
+        .select("id,name,photo_url,current_rating")
+        .in("id", ids);
+      for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
+    }
+    return (parts ?? []).map((p: any) => ({
+      user_id: p.user_id,
+      joined_at: p.created_at,
+      profile: profiles[p.user_id] ?? null,
+    }));
+  });
+
+export const searchPlayers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ query: z.string().trim().max(80).default("") }).parse(input))
+  .handler(async ({ context, data }) => {
+    let q = (context.supabase as any)
+      .from("profiles")
+      .select("id,name,photo_url,current_rating")
+      .eq("onboarded", true)
+      .neq("id", context.userId)
+      .order("name", { ascending: true })
+      .limit(10);
+    if (data.query.length > 0) {
+      q = q.ilike("name", `%${data.query.replace(/[%_]/g, "")}%`);
+    }
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as { id: string; name: string; photo_url: string | null; current_rating: number | null }[];
   });
 
 export const getMatch = createServerFn({ method: "GET" })
@@ -248,18 +333,47 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
       .from("matches")
       .select("*")
       .eq("status", "open")
-      .is("opponent_id", null)
       .neq("creator_id", context.userId)
       .gt("date_time", nowIso)
       .order("date_time", { ascending: true });
     if (error) throw new Error(error.message);
-    const rows = (data ?? []) as MatchRow[];
+    const allRows = (data ?? []) as MatchRow[];
 
+    // Singles opens: opponent_id must be null. Doubles opens: partner_id may be set.
+    const rows = allRows.filter(
+      (r) => (r.format === "doubles") || r.opponent_id == null,
+    );
+
+    // Fetch participant counts + my membership for doubles rows
+    const doublesIds = rows.filter((r) => r.format === "doubles").map((r) => r.id);
+    const countByMatch: Record<string, number> = {};
+    const myJoined = new Set<string>();
+    if (doublesIds.length) {
+      const { data: parts } = await (context.supabase as any)
+        .from("match_participants")
+        .select("match_id,user_id")
+        .in("match_id", doublesIds);
+      for (const p of (parts ?? []) as any[]) {
+        countByMatch[p.match_id] = (countByMatch[p.match_id] ?? 0) + 1;
+        if (p.user_id === context.userId) myJoined.add(p.match_id);
+      }
+    }
+
+    // Exclude doubles matches I've already joined, or that are full
+    const notJoinedFull = rows.filter((r) => {
+      if (r.format !== "doubles") return true;
+      if (myJoined.has(r.id)) return false;
+      const joined = countByMatch[r.id] ?? 0;
+      return joined < r.max_players;
+    });
+
+    // Apply rating filter to singles only (doubles rating rules TBD)
     const filtered = myRating == null
-      ? rows
-      : rows.filter((r) =>
-          (r.desired_min_rating == null || myRating >= r.desired_min_rating) &&
-          (r.desired_max_rating == null || myRating <= r.desired_max_rating),
+      ? notJoinedFull
+      : notJoinedFull.filter((r) =>
+          r.format === "doubles" ||
+          ((r.desired_min_rating == null || myRating >= r.desired_min_rating) &&
+            (r.desired_max_rating == null || myRating <= r.desired_max_rating)),
         );
 
     const creatorIds = Array.from(new Set(filtered.map((r) => r.creator_id)));
@@ -271,7 +385,11 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
         .in("id", creatorIds);
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
-    return filtered.map((r) => ({ ...r, creator: profiles[r.creator_id] ?? null }));
+    return filtered.map((r) => ({
+      ...r,
+      creator: profiles[r.creator_id] ?? null,
+      joined_count: r.format === "doubles" ? (countByMatch[r.id] ?? 0) : null,
+    }));
   });
 
 export const listIncomingInvites = createServerFn({ method: "GET" })
@@ -300,15 +418,39 @@ export const listIncomingInvites = createServerFn({ method: "GET" })
 export const listUpcomingMatches = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await (context.supabase as any)
+    // Include matches where user is creator, opponent, or a doubles participant
+    const { data: myParts } = await (context.supabase as any)
+      .from("match_participants")
+      .select("match_id")
+      .eq("user_id", context.userId);
+    const partIds = ((myParts ?? []) as any[]).map((p) => p.match_id);
+
+    const seen = new Set<string>();
+    const collected: MatchRow[] = [];
+    const { data: mine, error } = await (context.supabase as any)
       .from("matches")
       .select("*")
       .in("status", ["accepted", "score_pending"])
       .or(`creator_id.eq.${context.userId},opponent_id.eq.${context.userId}`)
       .order("date_time", { ascending: true });
     if (error) throw new Error(error.message);
-    const rows = (data ?? []) as MatchRow[];
-    const ids = Array.from(new Set(rows.flatMap((r) => [r.creator_id, r.opponent_id]).filter(Boolean) as string[]));
+    for (const r of (mine ?? []) as MatchRow[]) {
+      if (!seen.has(r.id)) { seen.add(r.id); collected.push(r); }
+    }
+    if (partIds.length) {
+      const { data: joined, error: e2 } = await (context.supabase as any)
+        .from("matches")
+        .select("*")
+        .in("id", partIds)
+        .in("status", ["accepted", "score_pending"]);
+      if (e2) throw new Error(e2.message);
+      for (const r of (joined ?? []) as MatchRow[]) {
+        if (!seen.has(r.id)) { seen.add(r.id); collected.push(r); }
+      }
+    }
+    collected.sort((a, b) => a.date_time.localeCompare(b.date_time));
+
+    const ids = Array.from(new Set(collected.flatMap((r) => [r.creator_id, r.opponent_id]).filter(Boolean) as string[]));
     const profiles: Record<string, { id: string; name: string; photo_url: string | null }> = {};
     if (ids.length) {
       const { data: profs } = await (context.supabase as any)
@@ -317,7 +459,7 @@ export const listUpcomingMatches = createServerFn({ method: "GET" })
         .in("id", ids);
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
-    return rows.map((r) => ({
+    return collected.map((r) => ({
       ...r,
       creator: profiles[r.creator_id] ?? null,
       opponent: r.opponent_id ? profiles[r.opponent_id] ?? null : null,

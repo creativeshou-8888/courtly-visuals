@@ -3,10 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, MapPin, Plus, User as UserIcon, Users } from "lucide-react";
+import { ArrowLeft, MapPin, Plus, Search, User as UserIcon, Users, X } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { useCurrentProfile } from "@/hooks/use-current-profile";
-import { createMatch, getPlayerSummary } from "@/lib/match.functions";
+import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
+import { createMatch, getPlayerSummary, searchPlayers } from "@/lib/match.functions";
 import { decodeCourt } from "@/lib/rating";
 
 type Search = { opponentId?: string; opponentName?: string };
@@ -34,6 +34,106 @@ function localNowMinutes(offsetMinutes = 60) {
   return new Date(d.getTime() - tz * 60_000).toISOString().slice(0, 16);
 }
 
+function PartnerPicker({
+  selected,
+  onSelect,
+  onClear,
+}: {
+  selected: { id: string; name: string; photo_url: string | null } | null;
+  onSelect: (p: { id: string; name: string; photo_url: string | null }) => void;
+  onClear: () => void;
+}) {
+  const [q, setQ] = useState("");
+  const search = useServerFn(searchPlayers);
+  const { data, isFetching } = useQuery({
+    queryKey: ["match", "player-search", q],
+    queryFn: () => search({ data: { query: q } }),
+    staleTime: 15_000,
+  });
+  if (selected) {
+    return (
+      <div className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
+        <img
+          src={selected.photo_url || initialsAvatar(selected.name)}
+          alt=""
+          className="h-9 w-9 rounded-full object-cover"
+        />
+        <p className="flex-1 truncate text-sm font-semibold text-navy">{selected.name}</p>
+        <button
+          type="button"
+          onClick={onClear}
+          className="grid h-8 w-8 place-items-center rounded-full border border-border text-navy"
+          aria-label="Remove partner"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-full border border-border bg-background px-4 py-2.5">
+        <Search className="h-4 w-4 text-muted-foreground" />
+        <input
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search a player by name"
+          className="bg-transparent text-sm text-navy placeholder:text-muted-foreground focus:outline-none"
+        />
+      </div>
+      <div className="mt-2 max-h-56 overflow-y-auto rounded-2xl border border-border bg-background">
+        {isFetching && !data ? (
+          <p className="p-3 text-xs text-muted-foreground">Searching…</p>
+        ) : (data ?? []).length === 0 ? (
+          <p className="p-3 text-xs text-muted-foreground">No players found.</p>
+        ) : (
+          (data ?? []).map((p, i) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onSelect(p)}
+              className={`flex w-full items-center gap-3 p-3 text-left hover:bg-secondary ${i > 0 ? "border-t border-border" : ""}`}
+            >
+              <img
+                src={p.photo_url || initialsAvatar(p.name)}
+                alt=""
+                className="h-8 w-8 rounded-full object-cover"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-navy">{p.name}</p>
+                {p.current_rating != null && (
+                  <p className="text-[11px] text-muted-foreground">Rating {p.current_rating}</p>
+                )}
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SlotList({ slots }: { slots: (string | null)[] }) {
+  return (
+    <div className="mt-3 space-y-2">
+      {slots.map((label, i) => (
+        <div
+          key={i}
+          className={`flex items-center gap-3 rounded-2xl border p-3 text-sm ${
+            label ? "border-navy/30 bg-navy/5 text-navy" : "border-dashed border-border bg-background text-muted-foreground"
+          }`}
+        >
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-navy">
+            {i + 1}
+          </span>
+          <span className={label ? "font-semibold" : ""}>{label ?? "Open spot"}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function NewMatchPage() {
   const { opponentId, opponentName } = Route.useSearch();
   const { data: profile } = useCurrentProfile();
@@ -43,6 +143,11 @@ function NewMatchPage() {
 
   const [mode, setMode] = useState<"open" | "direct">(opponentId ? "direct" : "open");
   const [format, setFormat] = useState<"singles" | "doubles">("singles");
+  const [doublesStyle, setDoublesStyle] = useState<"standard" | "rotating">("standard");
+  const [rotatingCount, setRotatingCount] = useState<5 | 6>(5);
+  const [partnerMode, setPartnerMode] = useState<"find" | "picked">("find");
+  const [partner, setPartner] = useState<{ id: string; name: string; photo_url: string | null } | null>(null);
+
   const [matchType, setMatchType] = useState<"rated" | "friendly">("rated");
   const [dateTime, setDateTime] = useState<string>(localNowMinutes(60 * 24));
   const [court, setCourt] = useState<string>("");
@@ -66,11 +171,18 @@ function NewMatchPage() {
     if (!court && preferredCourts.length) setCourt(preferredCourts[0]);
   }, [preferredCourts, court]);
 
+  // Force friendly when Rotating Doubles is picked
+  useEffect(() => {
+    if (format === "doubles" && doublesStyle === "rotating" && matchType === "rated") {
+      setMatchType("friendly");
+    }
+  }, [format, doublesStyle, matchType]);
+
   const fetchOpp = useServerFn(getPlayerSummary);
   const oppQuery = useQuery({
     queryKey: ["match", "opponent-summary", opponentId],
     queryFn: () => fetchOpp({ data: { id: opponentId! } }),
-    enabled: opponentIsRealUser,
+    enabled: opponentIsRealUser && format === "singles",
   });
 
   const submit = useServerFn(createMatch);
@@ -83,14 +195,56 @@ function NewMatchPage() {
     onError: (err: any) => toast.error(err?.message ?? "Could not create match"),
   });
 
+  const meName = profile?.name?.split(" ")[0] ?? "You";
+  const meLabel = `${profile?.name ?? "You"} (you)`;
+
+  const slotsPreview: (string | null)[] = useMemo(() => {
+    if (format !== "doubles") return [];
+    if (doublesStyle === "standard") {
+      if (partnerMode === "picked") {
+        return [meLabel, partner?.name ?? null, null, null];
+      }
+      return [meLabel, null, null, null];
+    }
+    // rotating
+    const total = rotatingCount;
+    return [meLabel, ...Array.from({ length: total - 1 }, () => null)];
+  }, [format, doublesStyle, partnerMode, partner, rotatingCount, meLabel]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (format === "doubles") return;
     const chosenCourt = (court === "__custom__" ? customCourt : court).trim();
     if (!chosenCourt) return toast.error("Choose a court or location");
     const iso = new Date(dateTime).toISOString();
     if (new Date(iso).getTime() <= Date.now()) return toast.error("Choose a future date & time");
 
+    if (format === "doubles") {
+      const isStandard = doublesStyle === "standard";
+      const useDirect = false; // doubles uses participants, not opponent_id
+      const partnerId = isStandard && partnerMode === "picked" ? partner?.id ?? null : null;
+      if (isStandard && partnerMode === "picked" && !partnerId) {
+        return toast.error("Select your partner or choose 'Find 3 players'");
+      }
+      mutation.mutate({
+        data: {
+          opponent_id: null,
+          date_time: iso,
+          court_location: chosenCourt,
+          court_booked: courtBooked,
+          match_type: matchType,
+          format: "doubles",
+          doubles_style: doublesStyle,
+          max_players: isStandard ? 4 : rotatingCount,
+          partner_id: partnerId,
+          desired_min_rating: null,
+          desired_max_rating: null,
+          message: message.trim() || null,
+        },
+      });
+      return;
+    }
+
+    // Singles path (unchanged)
     const useDirect = mode === "direct" && opponentIsRealUser;
     mutation.mutate({
       data: {
@@ -99,7 +253,10 @@ function NewMatchPage() {
         court_location: chosenCourt,
         court_booked: courtBooked,
         match_type: matchType,
-        format,
+        format: "singles",
+        doubles_style: null,
+        max_players: 2,
+        partner_id: null,
         desired_min_rating: useDirect ? null : minRating || null,
         desired_max_rating: useDirect ? null : maxRating || null,
         message: message.trim() || null,
@@ -110,11 +267,12 @@ function NewMatchPage() {
   const isOpen = mode === "open" || !opponentIsRealUser;
   const isDoubles = format === "doubles";
   const primaryLabel = isDoubles
-    ? "Doubles setup coming next"
+    ? "Post doubles invite"
     : isOpen
       ? "Post open invite"
       : "Send match invite";
   const minInput = localNowMinutes(0);
+  const ratedDisabled = isDoubles && doublesStyle === "rotating";
 
   return (
     <AppShell>
@@ -153,55 +311,126 @@ function NewMatchPage() {
               <Users className="h-4 w-4" /> Doubles · 2 vs 2
             </button>
           </div>
-          {isDoubles && (
-            <div className="mt-3 rounded-2xl border border-dashed border-court/50 bg-court/10 p-3">
-              <p className="text-sm font-semibold text-navy">Doubles match setup coming next</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Partner and team selection isn't available yet. Switch to Singles to create a match now.
-              </p>
-            </div>
-          )}
         </section>
 
-        {/* Who */}
-        <section className="rounded-3xl border border-border bg-card p-5">
-          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Who</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setMode("open")}
-              className={`rounded-full px-4 py-2.5 text-sm font-semibold ${mode === "open" ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
-            >
-              Open invite
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("direct")}
-              disabled={!opponentId}
-              className={`rounded-full px-4 py-2.5 text-sm font-semibold disabled:opacity-50 ${mode === "direct" ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
-            >
-              Invite specific player
-            </button>
-          </div>
+        {/* Doubles setup */}
+        {isDoubles && (
+          <section className="rounded-3xl border border-border bg-card p-5">
+            <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Game style</h2>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setDoublesStyle("standard")}
+                className={`rounded-2xl px-4 py-3 text-left text-sm ${doublesStyle === "standard" ? "border-2 border-navy bg-navy/5" : "border border-border bg-background"}`}
+              >
+                <p className="font-semibold text-navy">Standard Doubles</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">4 players · fixed 2 vs 2</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDoublesStyle("rotating")}
+                className={`rounded-2xl px-4 py-3 text-left text-sm ${doublesStyle === "rotating" ? "border-2 border-navy bg-navy/5" : "border border-border bg-background"}`}
+              >
+                <p className="font-semibold text-navy">Rotating Doubles</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">5 or 6 players · take turns</p>
+              </button>
+            </div>
 
-          {mode === "direct" && opponentId && (
-            <div className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-navy">
-                <UserIcon className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-navy">
-                  {oppQuery.data?.name ?? opponentName ?? "Selected player"}
-                </p>
-                {!opponentIsRealUser && (
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    Demo player — switch to open invite to post publicly.
-                  </p>
+            {doublesStyle === "standard" && (
+              <div className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Players</p>
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => { setPartnerMode("find"); setPartner(null); }}
+                    className={`rounded-full px-4 py-2.5 text-sm font-semibold ${partnerMode === "find" ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
+                  >
+                    Find 3 players
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPartnerMode("picked")}
+                    className={`rounded-full px-4 py-2.5 text-sm font-semibold ${partnerMode === "picked" ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
+                  >
+                    I have a partner
+                  </button>
+                </div>
+                {partnerMode === "picked" && (
+                  <PartnerPicker
+                    selected={partner}
+                    onSelect={setPartner}
+                    onClear={() => setPartner(null)}
+                  />
                 )}
+                <SlotList slots={slotsPreview} />
               </div>
+            )}
+
+            {doublesStyle === "rotating" && (
+              <div className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Player count</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {[5, 6].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setRotatingCount(n as 5 | 6)}
+                      className={`rounded-full px-4 py-2.5 text-sm font-semibold ${rotatingCount === n ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
+                    >
+                      {n} players
+                    </button>
+                  ))}
+                </div>
+                <SlotList slots={slotsPreview} />
+                <p className="mt-3 rounded-2xl border border-dashed border-court/50 bg-court/10 p-3 text-xs text-muted-foreground">
+                  Rotating Doubles is friendly-only for now because partners and opponents change during the session.
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Who (singles only) */}
+        {!isDoubles && (
+          <section className="rounded-3xl border border-border bg-card p-5">
+            <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Who</h2>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMode("open")}
+                className={`rounded-full px-4 py-2.5 text-sm font-semibold ${mode === "open" ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
+              >
+                Open invite
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("direct")}
+                disabled={!opponentId}
+                className={`rounded-full px-4 py-2.5 text-sm font-semibold disabled:opacity-50 ${mode === "direct" ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
+              >
+                Invite specific player
+              </button>
             </div>
-          )}
-        </section>
+
+            {mode === "direct" && opponentId && (
+              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-navy">
+                  <UserIcon className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-navy">
+                    {oppQuery.data?.name ?? opponentName ?? "Selected player"}
+                  </p>
+                  {!opponentIsRealUser && (
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      Demo player — switch to open invite to post publicly.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Type */}
         <section className="rounded-3xl border border-border bg-card p-5">
@@ -211,13 +440,19 @@ function NewMatchPage() {
               <button
                 key={t}
                 type="button"
+                disabled={t === "rated" && ratedDisabled}
                 onClick={() => setMatchType(t)}
-                className={`rounded-full px-4 py-2.5 text-sm font-semibold capitalize ${matchType === t ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
+                className={`rounded-full px-4 py-2.5 text-sm font-semibold capitalize disabled:opacity-40 ${matchType === t ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
               >
                 {t === "rated" ? "Rated match" : "Friendly match"}
               </button>
             ))}
           </div>
+          {ratedDisabled && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Rotating Doubles is friendly-only for now.
+            </p>
+          )}
         </section>
 
         {/* Date & time */}
@@ -279,8 +514,8 @@ function NewMatchPage() {
           </div>
         </section>
 
-        {/* Rating range (open only) */}
-        {isOpen && (
+        {/* Rating range (singles open only) */}
+        {!isDoubles && isOpen && (
           <section className="rounded-3xl border border-border bg-card p-5">
             <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Opponent rating range</h2>
             <p className="mt-1 text-xs text-muted-foreground">Default: your rating ±200 ({currentRating})</p>
@@ -326,7 +561,7 @@ function NewMatchPage() {
 
         <button
           type="submit"
-          disabled={mutation.isPending || isDoubles}
+          disabled={mutation.isPending}
           className="w-full rounded-full bg-court px-5 py-3.5 text-sm font-semibold text-navy transition-transform active:scale-[0.98] disabled:opacity-60"
         >
           {mutation.isPending ? "Creating…" : primaryLabel}
