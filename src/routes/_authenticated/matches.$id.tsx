@@ -110,6 +110,8 @@ function MatchDetail() {
   const dispute = useServerFn(disputeScore);
   const resubmit = useServerFn(resubmitScore);
   const cancelDisputed = useServerFn(cancelDisputedMatch);
+  const joinDoubles = useServerFn(joinDoublesMatch);
+  const fetchParticipants = useServerFn(listMatchParticipants);
   const [scoreOpen, setScoreOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
