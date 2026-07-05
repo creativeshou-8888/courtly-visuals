@@ -273,14 +273,23 @@ function MatchDetail() {
   const isFuture = new Date(match.date_time).getTime() > nowMs;
   const isPastScheduled = new Date(match.date_time).getTime() <= nowMs;
   const currentUserId = viewerIsCreator ? match.creator_id : match.opponent_id;
+  const isDoubles = ((match as any).format ?? "singles") === "doubles";
+  const maxPlayers: number = (match as any).max_players ?? (isDoubles ? 4 : 2);
+  const doublesStyle: "standard" | "rotating" | null = (match as any).doubles_style ?? null;
+  const partsList = participants ?? [];
+  const joinedCount = partsList.length || (isDoubles ? 1 : 0);
+  const remainingSpots = Math.max(0, maxPlayers - joinedCount);
+  const isParticipant = !!partsList.find((p) => p.user_id === (data as any)?.match?.creator_id) && false; // placeholder
+  const viewerIsParticipant = partsList.some((p) => p.user_id && p.user_id === (viewerIsCreator ? match.creator_id : (partsList.find((pp) => pp.user_id !== match.creator_id)?.user_id))) || partsList.some((p) => p.user_id === (window as any).__me);
+  // Simpler: derive viewerIsParticipant by comparing to any known id — we use auth flag by matching against creator_id and participants
   const canCancel = viewerIsCreator && (match.status === "open" || match.status === "invited");
-  const canAcceptOpen = !viewerIsCreator && match.status === "open" && isFuture;
+  const canAcceptOpen = !isDoubles && !viewerIsCreator && match.status === "open" && isFuture;
   const canRespondDirect = !viewerIsCreator && match.status === "invited" && isFuture;
   const isAccepted = match.status === "accepted";
   const isPending = match.status === "score_pending";
   const isConfirmed = match.status === "confirmed";
   const isDisputed = match.status === "disputed";
-  const canEnterScore = isAccepted && isPastScheduled && match.opponent_id != null;
+  const canEnterScore = !isDoubles && isAccepted && isPastScheduled && match.opponent_id != null;
   const isSubmitter = (isPending || isDisputed) && match.submitted_by === currentUserId;
   const canConfirmOrDispute = isPending && !isSubmitter;
   const canResolveDispute = isDisputed && isSubmitter;
