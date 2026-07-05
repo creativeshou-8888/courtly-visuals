@@ -11,6 +11,7 @@ const createSchema = z
     court_location: z.string().trim().min(1).max(200),
     court_booked: z.boolean(),
     match_type: z.enum(["rated", "friendly"]),
+    format: z.enum(["singles", "doubles"]).default("singles"),
     desired_min_rating: z.number().int().min(0).max(4000).nullable(),
     desired_max_rating: z.number().int().min(0).max(4000).nullable(),
     message: z.string().trim().max(500).nullable(),
@@ -28,6 +29,7 @@ const createSchema = z
   );
 
 export type ScoreSet = { a: number; b: number };
+export type MatchFormat = "singles" | "doubles";
 export type MatchRow = {
   id: string;
   creator_id: string;
@@ -36,6 +38,7 @@ export type MatchRow = {
   court_location: string;
   court_booked: boolean;
   match_type: "rated" | "friendly";
+  format: MatchFormat;
   status:
     | "open"
     | "invited"
@@ -100,6 +103,9 @@ export const createMatch = createServerFn({ method: "POST" })
     if (data.opponent_id === context.userId) {
       throw new Error("You cannot invite yourself");
     }
+    if (data.format === "doubles") {
+      throw new Error("Doubles match setup is coming next");
+    }
     const status = data.opponent_id ? "invited" : "open";
     const payload = {
       creator_id: context.userId,
@@ -108,6 +114,7 @@ export const createMatch = createServerFn({ method: "POST" })
       court_location: data.court_location,
       court_booked: data.court_booked,
       match_type: data.match_type,
+      format: data.format,
       desired_min_rating: data.opponent_id ? null : data.desired_min_rating,
       desired_max_rating: data.opponent_id ? null : data.desired_max_rating,
       message: data.message,
@@ -473,6 +480,7 @@ export type RecentMatch = {
   id: string;
   date_time: string;
   match_type: "rated" | "friendly";
+  format: MatchFormat;
   score_sets: ScoreSet[] | null;
   won: boolean;
   opponent: { id: string; name: string; photo_url: string | null } | null;
@@ -534,6 +542,7 @@ export const listMyRecentMatches = createServerFn({ method: "GET" })
         id: r.id,
         date_time: r.date_time,
         match_type: r.match_type,
+        format: (r.format ?? "singles") as MatchFormat,
         score_sets: r.score_sets ?? null,
         won: r.winner_id === context.userId,
         opponent: oppId ? profiles[oppId] ?? null : null,

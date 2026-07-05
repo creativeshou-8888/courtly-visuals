@@ -36,6 +36,7 @@ import {
 } from "@/lib/feedback.functions";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { BadgeMedal } from "@/components/BadgeMedal";
+import { FormatBadge } from "@/components/FormatBadge";
 import { markKudosSkipped, clearKudosSkipped } from "@/lib/kudos-skipped";
 import { initialsAvatar } from "@/hooks/use-current-profile";
 
@@ -299,8 +300,9 @@ function MatchDetail() {
                         ? "Match invite"
                         : "Open invite"}
             </h1>
-            <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-              {match.match_type === "rated" ? "Rated match" : "Friendly match"} · Singles
+            <p className="mt-1 inline-flex flex-wrap items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+              <span>{match.match_type === "rated" ? "Rated match" : "Friendly match"}</span>
+              <FormatBadge format={(match as any).format} />
             </p>
           </div>
           <StatusPill status={match.status} />

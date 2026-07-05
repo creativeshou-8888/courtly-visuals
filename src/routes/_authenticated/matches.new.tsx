@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, MapPin, Plus, User as UserIcon } from "lucide-react";
+import { ArrowLeft, MapPin, Plus, User as UserIcon, Users } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useCurrentProfile } from "@/hooks/use-current-profile";
 import { createMatch, getPlayerSummary } from "@/lib/match.functions";
@@ -42,6 +42,7 @@ function NewMatchPage() {
   const opponentIsRealUser = !!opponentId && UUID_RE.test(opponentId);
 
   const [mode, setMode] = useState<"open" | "direct">(opponentId ? "direct" : "open");
+  const [format, setFormat] = useState<"singles" | "doubles">("singles");
   const [matchType, setMatchType] = useState<"rated" | "friendly">("rated");
   const [dateTime, setDateTime] = useState<string>(localNowMinutes(60 * 24));
   const [court, setCourt] = useState<string>("");
@@ -84,6 +85,7 @@ function NewMatchPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (format === "doubles") return;
     const chosenCourt = (court === "__custom__" ? customCourt : court).trim();
     if (!chosenCourt) return toast.error("Choose a court or location");
     const iso = new Date(dateTime).toISOString();
@@ -97,6 +99,7 @@ function NewMatchPage() {
         court_location: chosenCourt,
         court_booked: courtBooked,
         match_type: matchType,
+        format,
         desired_min_rating: useDirect ? null : minRating || null,
         desired_max_rating: useDirect ? null : maxRating || null,
         message: message.trim() || null,
@@ -105,7 +108,12 @@ function NewMatchPage() {
   }
 
   const isOpen = mode === "open" || !opponentIsRealUser;
-  const primaryLabel = isOpen ? "Post open invite" : "Send match invite";
+  const isDoubles = format === "doubles";
+  const primaryLabel = isDoubles
+    ? "Doubles setup coming next"
+    : isOpen
+      ? "Post open invite"
+      : "Send match invite";
   const minInput = localNowMinutes(0);
 
   return (
@@ -120,10 +128,41 @@ function NewMatchPage() {
 
       <div className="mb-4">
         <h1 className="font-display text-2xl font-bold text-navy">Create match</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Singles match invite</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isDoubles ? "Doubles match invite" : "Singles match invite"}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Format */}
+        <section className="rounded-3xl border border-border bg-card p-5">
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Format</h2>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setFormat("singles")}
+              className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ${format === "singles" ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
+            >
+              <UserIcon className="h-4 w-4" /> Singles · 1 vs 1
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormat("doubles")}
+              className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ${format === "doubles" ? "bg-navy text-primary-foreground" : "border border-border bg-background text-navy"}`}
+            >
+              <Users className="h-4 w-4" /> Doubles · 2 vs 2
+            </button>
+          </div>
+          {isDoubles && (
+            <div className="mt-3 rounded-2xl border border-dashed border-court/50 bg-court/10 p-3">
+              <p className="text-sm font-semibold text-navy">Doubles match setup coming next</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Partner and team selection isn't available yet. Switch to Singles to create a match now.
+              </p>
+            </div>
+          )}
+        </section>
+
         {/* Who */}
         <section className="rounded-3xl border border-border bg-card p-5">
           <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Who</h2>
@@ -287,7 +326,7 @@ function NewMatchPage() {
 
         <button
           type="submit"
-          disabled={mutation.isPending}
+          disabled={mutation.isPending || isDoubles}
           className="w-full rounded-full bg-court px-5 py-3.5 text-sm font-semibold text-navy transition-transform active:scale-[0.98] disabled:opacity-60"
         >
           {mutation.isPending ? "Creating…" : primaryLabel}

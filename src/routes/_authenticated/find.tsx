@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { ChevronRight, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { PlayerCard } from "@/components/PlayerBits";
+import { FormatBadge, normalizeFormat } from "@/components/FormatBadge";
 import { players } from "@/lib/mock-data";
 import { listOpenInvitesForMe } from "@/lib/match.functions";
 import { initialsAvatar } from "@/hooks/use-current-profile";
@@ -43,7 +45,15 @@ function OpenInvitesNearMe() {
     staleTime: 15_000,
     retry: 1,
   });
-  const invites = data ?? [];
+  const [formatFilter, setFormatFilter] = useState<"all" | "singles" | "doubles">("all");
+  const allInvites = data ?? [];
+  const invites = useMemo(
+    () =>
+      formatFilter === "all"
+        ? allInvites
+        : allInvites.filter((m: any) => normalizeFormat(m.format) === formatFilter),
+    [allInvites, formatFilter],
+  );
 
 
   return (
@@ -52,6 +62,25 @@ function OpenInvitesNearMe() {
         <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Open invites near your level
         </h2>
+      </div>
+
+      <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {(["all", "singles", "doubles"] as const).map((f) => {
+          const label = f === "all" ? "All formats" : f === "singles" ? "Singles" : "Doubles";
+          const active = formatFilter === f;
+          return (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFormatFilter(f)}
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold ${
+                active ? "bg-navy text-primary-foreground" : "border border-border bg-card text-navy"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {isLoading ? (
@@ -83,7 +112,7 @@ function OpenInvitesNearMe() {
         </div>
       ) : (
         <div className="rounded-3xl border border-border bg-card">
-          {invites.map((m, i) => (
+          {invites.map((m: any, i: number) => (
             <Link
               key={m.id}
               to="/matches/$id"
@@ -96,14 +125,16 @@ function OpenInvitesNearMe() {
                 className="h-11 w-11 rounded-full object-cover"
               />
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-navy">
-                  {m.creator?.name ?? "Player"}
-                  {m.creator?.current_rating != null && (
-                    <span className="ml-1 text-xs font-medium text-muted-foreground">
-                      · {m.creator.current_rating}
-                    </span>
-                  )}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-navy">
+                    {m.creator?.name ?? "Player"}
+                    {m.creator?.current_rating != null && (
+                      <span className="ml-1 text-xs font-medium text-muted-foreground">
+                        · {m.creator.current_rating}
+                      </span>
+                    )}
+                  </p>
+                </div>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
                   {formatWhen(m.date_time)} · {m.court_location}
                 </p>
@@ -124,6 +155,7 @@ function OpenInvitesNearMe() {
                   View invite <ChevronRight className="h-3 w-3" />
                 </p>
               </div>
+              <FormatBadge format={m.format} size="md" prominent />
             </Link>
           ))}
         </div>

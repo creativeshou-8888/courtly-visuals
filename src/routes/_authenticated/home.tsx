@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/PlayerBits";
+import { FormatBadge } from "@/components/FormatBadge";
 import { recentResults } from "@/lib/mock-data";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 import { useSkippedKudos } from "@/lib/kudos-skipped";
@@ -85,11 +86,14 @@ function OutgoingInvites() {
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {when} · {m.court_location}
                   </p>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
-                    <span className="text-navy">
-                      {m.status === "open" ? "Open" : m.status === "invited" ? "Invited" : m.status}
+                  <p className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span>
+                      {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
+                      <span className="text-navy">
+                        {m.status === "open" ? "Open" : m.status === "invited" ? "Invited" : m.status}
+                      </span>
                     </span>
+                    <FormatBadge format={(m as any).format} />
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -147,8 +151,9 @@ function IncomingInvites() {
               <p className="mt-0.5 truncate text-xs text-muted-foreground">
                 {formatWhen(m.date_time)} · {m.court_location}
               </p>
-              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-court">
-                {m.match_type === "rated" ? "Rated" : "Friendly"} · Invited you
+              <p className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-court">
+                <span>{m.match_type === "rated" ? "Rated" : "Friendly"} · Invited you</span>
+                <FormatBadge format={(m as any).format} />
               </p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -189,13 +194,16 @@ function UpcomingMatches() {
               <p className="mt-0.5 truncate text-xs text-muted-foreground">
                 {formatWhen(m.date_time)} · {m.court_location}
               </p>
-              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-navy">
-                {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
-                {m.status === "score_pending"
-                  ? "Score pending"
-                  : new Date(m.date_time).getTime() <= Date.now()
-                    ? "Ready to score"
-                    : "Accepted"}
+              <p className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-navy">
+                <span>
+                  {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
+                  {m.status === "score_pending"
+                    ? "Score pending"
+                    : new Date(m.date_time).getTime() <= Date.now()
+                      ? "Ready to score"
+                      : "Accepted"}
+                </span>
+                <FormatBadge format={(m as any).format} />
               </p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -313,8 +321,9 @@ function RecentMatches() {
                       </span>
                     )}
                   </p>
-                  <p className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     <span>{when}</span>
+                    <FormatBadge format={m.format} />
                     {kudosPending && (
                       <span className="rounded-full bg-court px-2 py-0.5 text-navy">
                         Kudos pending
