@@ -85,6 +85,7 @@ function NewMatchPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (format === "doubles") return;
     const chosenCourt = (court === "__custom__" ? customCourt : court).trim();
     if (!chosenCourt) return toast.error("Choose a court or location");
     const iso = new Date(dateTime).toISOString();
@@ -98,6 +99,7 @@ function NewMatchPage() {
         court_location: chosenCourt,
         court_booked: courtBooked,
         match_type: matchType,
+        format,
         desired_min_rating: useDirect ? null : minRating || null,
         desired_max_rating: useDirect ? null : maxRating || null,
         message: message.trim() || null,
@@ -106,7 +108,12 @@ function NewMatchPage() {
   }
 
   const isOpen = mode === "open" || !opponentIsRealUser;
-  const primaryLabel = isOpen ? "Post open invite" : "Send match invite";
+  const isDoubles = format === "doubles";
+  const primaryLabel = isDoubles
+    ? "Doubles setup coming next"
+    : isOpen
+      ? "Post open invite"
+      : "Send match invite";
   const minInput = localNowMinutes(0);
 
   return (
