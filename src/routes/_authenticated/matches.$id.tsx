@@ -13,7 +13,9 @@ import {
   MessageSquare,
   ShieldCheck,
   Trophy,
+  UserPlus,
   User as UserIcon,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
