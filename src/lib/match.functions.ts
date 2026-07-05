@@ -188,11 +188,50 @@ export const listMatchParticipants = createServerFn({ method: "GET" })
         .in("id", ids);
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
-    return (parts ?? []).map((p: any) => ({
-      user_id: p.user_id,
-      joined_at: p.created_at,
-      profile: profiles[p.user_id] ?? null,
-    }));
+    const { data: guests, error: gErr } = await (context.supabase as any)
+      .from("match_guests")
+      .select("id, guest_name, added_by, created_at")
+      .eq("match_id", data.id)
+      .order("created_at", { ascending: true });
+    if (gErr) throw new Error(gErr.message);
+    return {
+      participants: (parts ?? []).map((p: any) => ({
+        user_id: p.user_id,
+        joined_at: p.created_at,
+        profile: profiles[p.user_id] ?? null,
+      })),
+      guests: (guests ?? []).map((g: any) => ({
+        id: g.id as string,
+        name: g.guest_name as string,
+        added_by: g.added_by as string,
+        created_at: g.created_at as string,
+      })),
+    };
+  });
+
+export const addMatchGuest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ match_id: uuid, name: z.string().trim().min(1).max(40) }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("add_match_guest", {
+      _match_id: data.match_id,
+      _name: data.name,
+    });
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+export const removeMatchGuest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ guest_id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { error } = await (context.supabase as any).rpc("remove_match_guest", {
+      _guest_id: data.guest_id,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true } as const;
   });
 
 export const searchPlayers = createServerFn({ method: "GET" })
@@ -375,7 +414,25 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
             (r.desired_max_rating == null || myRating <= r.desired_max_rating)),
         );
 
-    const creatorIds = Array.from(new Set(filtered.map((r) => r.creator_id)));
+    // Guest counts for doubles rows
+    const guestCountByMatch: Record<string, number> = {};
+    if (doublesIds.length) {
+      const { data: gs } = await (context.supabase as any)
+        .from("match_guests")
+        .select("match_id")
+        .in("match_id", doublesIds);
+      for (const g of (gs ?? []) as any[]) {
+        guestCountByMatch[g.match_id] = (guestCountByMatch[g.match_id] ?? 0) + 1;
+      }
+    }
+    // Re-filter using players + guests
+    const notFull2 = filtered.filter((r) => {
+      if (r.format !== "doubles") return true;
+      const joined = (countByMatch[r.id] ?? 0) + (guestCountByMatch[r.id] ?? 0);
+      return joined < r.max_players;
+    });
+
+    const creatorIds = Array.from(new Set(notFull2.map((r) => r.creator_id)));
     const profiles: Record<string, { id: string; name: string; photo_url: string | null; current_rating: number | null }> = {};
     if (creatorIds.length) {
       const { data: profs } = await (context.supabase as any)
@@ -384,10 +441,13 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
         .in("id", creatorIds);
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
-    return filtered.map((r) => ({
+    return notFull2.map((r) => ({
       ...r,
       creator: profiles[r.creator_id] ?? null,
-      joined_count: r.format === "doubles" ? (countByMatch[r.id] ?? 0) : null,
+      joined_count:
+        r.format === "doubles"
+          ? (countByMatch[r.id] ?? 0) + (guestCountByMatch[r.id] ?? 0)
+          : null,
       viewer_joined: r.format === "doubles" ? myJoined.has(r.id) : false,
     }));
   });
@@ -461,7 +521,7 @@ export const listUpcomingMatches = createServerFn({ method: "GET" })
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
 
-    // Participant counts for doubles rows
+    // Participant + guest counts for doubles rows
     const doublesIds = collected.filter((r) => r.format === "doubles").map((r) => r.id);
     const countByMatch: Record<string, number> = {};
     if (doublesIds.length) {
@@ -471,6 +531,13 @@ export const listUpcomingMatches = createServerFn({ method: "GET" })
         .in("match_id", doublesIds);
       for (const p of (parts ?? []) as any[]) {
         countByMatch[p.match_id] = (countByMatch[p.match_id] ?? 0) + 1;
+      }
+      const { data: gs } = await (context.supabase as any)
+        .from("match_guests")
+        .select("match_id")
+        .in("match_id", doublesIds);
+      for (const g of (gs ?? []) as any[]) {
+        countByMatch[g.match_id] = (countByMatch[g.match_id] ?? 0) + 1;
       }
     }
 

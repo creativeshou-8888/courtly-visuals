@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Bell, Home, Search, Trophy, User } from "lucide-react";
+import { Bell, Home, Search, Sparkles, Trophy, User } from "lucide-react";
 import type { ReactNode } from "react";
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { to: "/find", label: "Find", icon: Search, match: (p: string) => p === "/find" },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy, match: (p: string) => p === "/leaderboard" },
   { to: "/profile", label: "Profile", icon: User, match: (p: string) => p.startsWith("/profile") || p.startsWith("/players/") },
+  { to: "/member", label: "Member", icon: Sparkles, match: (p: string) => p.startsWith("/member") },
 ] as const;
 
 function Logo() {

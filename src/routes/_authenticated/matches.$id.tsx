@@ -13,13 +13,16 @@ import {
   MessageSquare,
   ShieldCheck,
   Trophy,
+  UserPlus,
   User as UserIcon,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { ScoreEntry } from "@/components/ScoreEntry";
 import {
   acceptMatch,
+  addMatchGuest,
   cancelMatch,
   cancelDisputedMatch,
   confirmScore,
@@ -28,6 +31,7 @@ import {
   getMatch,
   joinDoublesMatch,
   listMatchParticipants,
+  removeMatchGuest,
   resubmitScore,
   submitScore,
   type ScoreSet,
@@ -113,9 +117,13 @@ function MatchDetail() {
   const cancelDisputed = useServerFn(cancelDisputedMatch);
   const joinDoubles = useServerFn(joinDoublesMatch);
   const fetchParticipants = useServerFn(listMatchParticipants);
+  const addGuestFn = useServerFn(addMatchGuest);
+  const removeGuestFn = useServerFn(removeMatchGuest);
   const [scoreOpen, setScoreOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [guestDialogOpen, setGuestDialogOpen] = useState(false);
+  const [guestName, setGuestName] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackSkipped, setFeedbackSkipped] = useState(false);
 
@@ -242,6 +250,26 @@ function MatchDetail() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not join match"),
   });
+  const addGuestMutation = useMutation({
+    mutationFn: addGuestFn,
+    onSuccess: () => {
+      toast.success("Guest added");
+      setGuestDialogOpen(false);
+      setGuestName("");
+      qc.invalidateQueries({ queryKey: ["match", id, "participants"] });
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not add guest"),
+  });
+  const removeGuestMutation = useMutation({
+    mutationFn: removeGuestFn,
+    onSuccess: () => {
+      toast.success("Guest removed");
+      qc.invalidateQueries({ queryKey: ["match", id, "participants"] });
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not remove guest"),
+  });
 
 
   if (isLoading) {
@@ -277,13 +305,18 @@ function MatchDetail() {
   const maxPlayers: number = (match as any).max_players ?? (isDoubles ? 4 : 2);
   const doublesStyle: "standard" | "rotating" | null = (match as any).doubles_style ?? null;
   type Participant = { user_id: string; joined_at: string; profile: { id: string; name: string; photo_url: string | null; current_rating: number | null } | null };
-  const partsList: Participant[] = (participants ?? []) as Participant[];
-  const joinedCount = isDoubles ? partsList.length : 0;
+  type Guest = { id: string; name: string; added_by: string; created_at: string };
+  const partsPayload = (participants ?? { participants: [], guests: [] }) as { participants: Participant[]; guests: Guest[] };
+  const partsList: Participant[] = partsPayload.participants;
+  const guestList: Guest[] = partsPayload.guests;
+  const guestCount = isDoubles ? guestList.length : 0;
+  const joinedCount = isDoubles ? partsList.length + guestCount : 0;
   const remainingSpots = Math.max(0, maxPlayers - joinedCount);
   const myId = myProfile?.id;
   const currentUserId = viewerIsCreator ? match.creator_id : match.opponent_id ?? myId;
   const viewerIsParticipant = isDoubles && !!myId && partsList.some((p) => p.user_id === myId);
   const isFull = isDoubles && joinedCount >= maxPlayers;
+  const canManageGuests = isDoubles && viewerIsCreator && doublesStyle === "standard" && (match.status === "open" || match.status === "accepted");
   const canCancel = viewerIsCreator && (match.status === "open" || match.status === "invited");
   const canAcceptOpen = !isDoubles && !viewerIsCreator && match.status === "open" && isFuture;
   const canRespondDirect = !isDoubles && !viewerIsCreator && match.status === "invited" && isFuture;
@@ -369,14 +402,63 @@ function MatchDetail() {
                     </p>
                   </div>
                 ))}
-                {Array.from({ length: remainingSpots }).map((_, i) => (
-                  <div key={`empty-${i}`} className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-background p-2.5">
-                    <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-muted-foreground">
-                      {joinedCount + i + 1}
+                {guestList.map((g, i) => (
+                  <div key={g.id} className="flex items-center gap-3 rounded-2xl border border-navy/20 bg-navy/5 p-2.5">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-navy">
+                      {partsList.length + i + 1}
                     </span>
-                    <p className="text-sm text-muted-foreground">Open spot</p>
+                    <span className="grid h-8 w-8 place-items-center rounded-full bg-court/40 text-navy">
+                      <UserIcon className="h-4 w-4" />
+                    </span>
+                    <p className="min-w-0 flex-1 truncate text-sm font-semibold text-navy">
+                      {g.name}
+                      <span className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">· guest</span>
+                    </p>
+                    {canManageGuests && (
+                      <button
+                        type="button"
+                        onClick={() => removeGuestMutation.mutate({ data: { guest_id: g.id } })}
+                        disabled={removeGuestMutation.isPending}
+                        aria-label={`Remove ${g.name}`}
+                        className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 ))}
+                {Array.from({ length: remainingSpots }).map((_, i) => {
+                  const slotNum = partsList.length + guestCount + i + 1;
+                  if (canManageGuests) {
+                    return (
+                      <button
+                        key={`empty-${i}`}
+                        type="button"
+                        onClick={() => setGuestDialogOpen(true)}
+                        className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-court/60 bg-court/5 p-2.5 text-left transition-colors hover:bg-court/15"
+                      >
+                        <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-muted-foreground">
+                          {slotNum}
+                        </span>
+                        <span className="grid h-8 w-8 place-items-center rounded-full bg-court text-navy">
+                          <UserPlus className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0 flex-1 text-sm font-semibold text-navy">
+                          Open spot
+                          <span className="ml-1 text-xs font-normal text-muted-foreground">— tap to add a friend</span>
+                        </span>
+                      </button>
+                    );
+                  }
+                  return (
+                    <div key={`empty-${i}`} className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-background p-2.5">
+                      <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-muted-foreground">
+                        {slotNum}
+                      </span>
+                      <p className="text-sm text-muted-foreground">Open spot</p>
+                    </div>
+                  );
+                })}
               </div>
             </>
           ) : (
@@ -689,6 +771,73 @@ function MatchDetail() {
               >
                 {cancelDisputedMutation.isPending ? "Cancelling…" : "Cancel match"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {guestDialogOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-3xl border border-border bg-background p-5">
+            <h3 className="font-display text-base font-semibold text-navy">Fill this open spot</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Leave it open so a Courtly player can join, or add a friend who doesn't have a Courtly account.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setGuestDialogOpen(false);
+                setGuestName("");
+              }}
+              className="mt-4 w-full rounded-2xl border border-border bg-card p-3 text-left text-sm font-semibold text-navy hover:bg-secondary"
+            >
+              Leave open for Courtly players
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                Anyone at the right level can join this spot.
+              </span>
+            </button>
+
+            <div className="mt-3 rounded-2xl border border-border bg-card p-3">
+              <label htmlFor="guest-name" className="text-sm font-semibold text-navy">
+                Add a friend without a Courtly account
+              </label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                No email or phone needed. They'll show up as a guest — no rating, no leaderboard, no kudos.
+              </p>
+              <input
+                id="guest-name"
+                type="text"
+                autoFocus
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                maxLength={40}
+                placeholder="Name or nickname"
+                className="mt-3 w-full rounded-full border border-border bg-background px-4 py-2 text-sm text-navy placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-court"
+              />
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuestDialogOpen(false);
+                    setGuestName("");
+                  }}
+                  disabled={addGuestMutation.isPending}
+                  className="rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold text-navy disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    addGuestMutation.mutate({ data: { match_id: id, name: guestName.trim() } })
+                  }
+                  disabled={addGuestMutation.isPending || guestName.trim().length === 0}
+                  className="rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                >
+                  {addGuestMutation.isPending ? "Adding…" : "Add guest"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

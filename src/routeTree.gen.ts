@@ -16,6 +16,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedMemberRouteImport } from './routes/_authenticated/member'
 import { Route as AuthenticatedLeaderboardRouteImport } from './routes/_authenticated/leaderboard'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedFindRouteImport } from './routes/_authenticated/find'
@@ -57,6 +58,11 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMemberRoute = AuthenticatedMemberRouteImport.update({
+  id: '/member',
+  path: '/member',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedLeaderboardRoute =
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/find': typeof AuthenticatedFindRoute
   '/home': typeof AuthenticatedHomeRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/member': typeof AuthenticatedMemberRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/matches/$id': typeof AuthenticatedMatchesIdRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/find': typeof AuthenticatedFindRoute
   '/home': typeof AuthenticatedHomeRoute
   '/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/member': typeof AuthenticatedMemberRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRouteWithChildren
   '/matches/$id': typeof AuthenticatedMatchesIdRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/_authenticated/find': typeof AuthenticatedFindRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/leaderboard': typeof AuthenticatedLeaderboardRoute
+  '/_authenticated/member': typeof AuthenticatedMemberRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRouteWithChildren
   '/_authenticated/matches/$id': typeof AuthenticatedMatchesIdRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/find'
     | '/home'
     | '/leaderboard'
+    | '/member'
     | '/onboarding'
     | '/profile'
     | '/matches/$id'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/find'
     | '/home'
     | '/leaderboard'
+    | '/member'
     | '/onboarding'
     | '/profile'
     | '/matches/$id'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/_authenticated/find'
     | '/_authenticated/home'
     | '/_authenticated/leaderboard'
+    | '/_authenticated/member'
     | '/_authenticated/onboarding'
     | '/_authenticated/profile'
     | '/_authenticated/matches/$id'
@@ -262,6 +274,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/member': {
+      id: '/_authenticated/member'
+      path: '/member'
+      fullPath: '/member'
+      preLoaderRoute: typeof AuthenticatedMemberRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/leaderboard': {
@@ -340,6 +359,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFindRoute: typeof AuthenticatedFindRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedLeaderboardRoute: typeof AuthenticatedLeaderboardRoute
+  AuthenticatedMemberRoute: typeof AuthenticatedMemberRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRouteWithChildren
   AuthenticatedMatchesIdRoute: typeof AuthenticatedMatchesIdRoute
@@ -351,6 +371,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFindRoute: AuthenticatedFindRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedLeaderboardRoute: AuthenticatedLeaderboardRoute,
+  AuthenticatedMemberRoute: AuthenticatedMemberRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRouteWithChildren,
   AuthenticatedMatchesIdRoute: AuthenticatedMatchesIdRoute,
