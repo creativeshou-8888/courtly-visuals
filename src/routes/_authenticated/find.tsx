@@ -112,52 +112,63 @@ function OpenInvitesNearMe() {
         </div>
       ) : (
         <div className="rounded-3xl border border-border bg-card">
-          {invites.map((m: any, i: number) => (
-            <Link
-              key={m.id}
-              to="/matches/$id"
-              params={{ id: m.id }}
-              className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 ${i > 0 ? "border-t border-border" : ""}`}
-            >
-              <img
-                src={m.creator?.photo_url || initialsAvatar(m.creator?.name || "Player")}
-                alt=""
-                className="h-11 w-11 rounded-full object-cover"
-              />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-semibold text-navy">
-                    {m.creator?.name ?? "Player"}
-                    {m.creator?.current_rating != null && (
-                      <span className="ml-1 text-xs font-medium text-muted-foreground">
-                        · {m.creator.current_rating}
+          {invites.map((m: any, i: number) => {
+            const isDoubles = normalizeFormat(m.format) === "doubles";
+            const joined = m.joined_count ?? (isDoubles ? 1 : null);
+            const remaining = isDoubles ? Math.max(0, (m.max_players ?? 4) - joined) : null;
+            return (
+              <Link
+                key={m.id}
+                to="/matches/$id"
+                params={{ id: m.id }}
+                className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 ${i > 0 ? "border-t border-border" : ""}`}
+              >
+                <img
+                  src={m.creator?.photo_url || initialsAvatar(m.creator?.name || "Player")}
+                  alt=""
+                  className="h-11 w-11 rounded-full object-cover"
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-semibold text-navy">
+                      {m.creator?.name ?? "Player"}
+                      {!isDoubles && m.creator?.current_rating != null && (
+                        <span className="ml-1 text-xs font-medium text-muted-foreground">
+                          · {m.creator.current_rating}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    {formatWhen(m.date_time)} · {m.court_location}
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-court">
+                    {m.match_type === "rated" ? "Rated" : "Friendly"}
+                    {" · "}
+                    <span className="text-muted-foreground">
+                      {m.court_booked ? "Court booked" : "Arrange together"}
+                    </span>
+                    {isDoubles && (
+                      <span className="text-navy">
+                        {" · "}
+                        {joined}/{m.max_players} · {remaining} {remaining === 1 ? "spot" : "spots"} left
+                      </span>
+                    )}
+                    {!isDoubles && m.desired_min_rating != null && m.desired_max_rating != null && (
+                      <span className="text-muted-foreground">
+                        {" · "}
+                        {m.desired_min_rating}–{m.desired_max_rating}
                       </span>
                     )}
                   </p>
+                  <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-navy">
+                    View invite <ChevronRight className="h-3 w-3" />
+                  </p>
                 </div>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                  {formatWhen(m.date_time)} · {m.court_location}
-                </p>
-                <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-court">
-                  {m.match_type === "rated" ? "Rated" : "Friendly"}
-                  {" · "}
-                  <span className="text-muted-foreground">
-                    {m.court_booked ? "Court booked" : "Arrange together"}
-                  </span>
-                  {m.desired_min_rating != null && m.desired_max_rating != null && (
-                    <span className="text-muted-foreground">
-                      {" · "}
-                      {m.desired_min_rating}–{m.desired_max_rating}
-                    </span>
-                  )}
-                </p>
-                <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-navy">
-                  View invite <ChevronRight className="h-3 w-3" />
-                </p>
-              </div>
-              <FormatBadge format={m.format} size="md" prominent />
-            </Link>
-          ))}
+                <FormatBadge format={m.format} doublesStyle={m.doubles_style} size="md" prominent />
+              </Link>
+            );
+          })}
         </div>
       )}
     </section>
