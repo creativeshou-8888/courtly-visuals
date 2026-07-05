@@ -414,7 +414,25 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
             (r.desired_max_rating == null || myRating <= r.desired_max_rating)),
         );
 
-    const creatorIds = Array.from(new Set(filtered.map((r) => r.creator_id)));
+    // Guest counts for doubles rows
+    const guestCountByMatch: Record<string, number> = {};
+    if (doublesIds.length) {
+      const { data: gs } = await (context.supabase as any)
+        .from("match_guests")
+        .select("match_id")
+        .in("match_id", doublesIds);
+      for (const g of (gs ?? []) as any[]) {
+        guestCountByMatch[g.match_id] = (guestCountByMatch[g.match_id] ?? 0) + 1;
+      }
+    }
+    // Re-filter using players + guests
+    const notFull2 = filtered.filter((r) => {
+      if (r.format !== "doubles") return true;
+      const joined = (countByMatch[r.id] ?? 0) + (guestCountByMatch[r.id] ?? 0);
+      return joined < r.max_players;
+    });
+
+    const creatorIds = Array.from(new Set(notFull2.map((r) => r.creator_id)));
     const profiles: Record<string, { id: string; name: string; photo_url: string | null; current_rating: number | null }> = {};
     if (creatorIds.length) {
       const { data: profs } = await (context.supabase as any)
@@ -423,10 +441,13 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
         .in("id", creatorIds);
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
-    return filtered.map((r) => ({
+    return notFull2.map((r) => ({
       ...r,
       creator: profiles[r.creator_id] ?? null,
-      joined_count: r.format === "doubles" ? (countByMatch[r.id] ?? 0) : null,
+      joined_count:
+        r.format === "doubles"
+          ? (countByMatch[r.id] ?? 0) + (guestCountByMatch[r.id] ?? 0)
+          : null,
       viewer_joined: r.format === "doubles" ? myJoined.has(r.id) : false,
     }));
   });
