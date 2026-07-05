@@ -302,7 +302,7 @@ function MatchDetail() {
             </h1>
             <p className="mt-1 inline-flex flex-wrap items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
               <span>{match.match_type === "rated" ? "Rated match" : "Friendly match"}</span>
-              <FormatBadge format={(match as any).format} />
+              <FormatBadge format={(match as any).format} doublesStyle={(match as any).doubles_style} />
             </p>
           </div>
           <StatusPill status={match.status} />
