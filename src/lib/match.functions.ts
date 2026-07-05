@@ -188,11 +188,50 @@ export const listMatchParticipants = createServerFn({ method: "GET" })
         .in("id", ids);
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
-    return (parts ?? []).map((p: any) => ({
-      user_id: p.user_id,
-      joined_at: p.created_at,
-      profile: profiles[p.user_id] ?? null,
-    }));
+    const { data: guests, error: gErr } = await (context.supabase as any)
+      .from("match_guests")
+      .select("id, guest_name, added_by, created_at")
+      .eq("match_id", data.id)
+      .order("created_at", { ascending: true });
+    if (gErr) throw new Error(gErr.message);
+    return {
+      participants: (parts ?? []).map((p: any) => ({
+        user_id: p.user_id,
+        joined_at: p.created_at,
+        profile: profiles[p.user_id] ?? null,
+      })),
+      guests: (guests ?? []).map((g: any) => ({
+        id: g.id as string,
+        name: g.guest_name as string,
+        added_by: g.added_by as string,
+        created_at: g.created_at as string,
+      })),
+    };
+  });
+
+export const addMatchGuest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ match_id: uuid, name: z.string().trim().min(1).max(40) }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("add_match_guest", {
+      _match_id: data.match_id,
+      _name: data.name,
+    });
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+export const removeMatchGuest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ guest_id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { error } = await (context.supabase as any).rpc("remove_match_guest", {
+      _guest_id: data.guest_id,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true } as const;
   });
 
 export const searchPlayers = createServerFn({ method: "GET" })
