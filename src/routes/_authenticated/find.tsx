@@ -116,6 +116,7 @@ function OpenInvitesNearMe() {
             const isDoubles = normalizeFormat(m.format) === "doubles";
             const joined = m.joined_count ?? (isDoubles ? 1 : null);
             const remaining = isDoubles ? Math.max(0, (m.max_players ?? 4) - joined) : null;
+            const viewerJoined = !!m.viewer_joined;
             return (
               <Link
                 key={m.id}
@@ -162,7 +163,13 @@ function OpenInvitesNearMe() {
                     )}
                   </p>
                   <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-navy">
-                    View invite <ChevronRight className="h-3 w-3" />
+                    {viewerJoined ? (
+                      <span className="rounded-full bg-court px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-navy">
+                        You're in
+                      </span>
+                    ) : (
+                      <>View invite <ChevronRight className="h-3 w-3" /></>
+                    )}
                   </p>
                 </div>
                 <FormatBadge format={m.format} doublesStyle={m.doubles_style} size="md" prominent />

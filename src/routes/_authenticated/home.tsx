@@ -177,38 +177,50 @@ function UpcomingMatches() {
     <section className="mb-6">
       <SectionHeader title="Upcoming matches" />
       <div className="rounded-3xl border border-border bg-card">
-        {matches.map((m, i) => (
-          <Link
-            key={m.id}
-            to="/matches/$id"
-            params={{ id: m.id }}
-            className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 ${i > 0 ? "border-t border-border" : ""}`}
-          >
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-court text-navy">
-              <CheckCircle2 className="h-4 w-4" />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-navy">
-                {m.creator?.name ?? "Player"} vs {m.opponent?.name ?? "Player"}
-              </p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                {formatWhen(m.date_time)} · {m.court_location}
-              </p>
-              <p className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-navy">
-                <span>
-                  {m.match_type === "rated" ? "Rated" : "Friendly"} ·{" "}
-                  {m.status === "score_pending"
-                    ? "Score pending"
-                    : new Date(m.date_time).getTime() <= Date.now()
-                      ? "Ready to score"
-                      : "Accepted"}
-                </span>
-                <FormatBadge format={(m as any).format} doublesStyle={(m as any).doubles_style} />
-              </p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </Link>
-        ))}
+        {matches.map((m, i) => {
+          const isDoubles = (m as any).format === "doubles";
+          const joined = (m as any).joined_count as number | null;
+          const cap = (m as any).max_players as number | undefined;
+          const remaining = isDoubles && cap != null && joined != null ? Math.max(0, cap - joined) : null;
+          const title = isDoubles
+            ? `${m.creator?.name ?? "Player"}'s doubles match`
+            : `${m.creator?.name ?? "Player"} vs ${m.opponent?.name ?? "Player"}`;
+          const statusLabel =
+            m.status === "score_pending"
+              ? "Score pending"
+              : m.status === "open"
+                ? remaining != null
+                  ? `Joined · ${joined}/${cap} · ${remaining} ${remaining === 1 ? "spot" : "spots"} left`
+                  : "Joined · waiting for players"
+                : new Date(m.date_time).getTime() <= Date.now()
+                  ? "Ready to score"
+                  : "Accepted";
+          return (
+            <Link
+              key={m.id}
+              to="/matches/$id"
+              params={{ id: m.id }}
+              className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-4 ${i > 0 ? "border-t border-border" : ""}`}
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-court text-navy">
+                <CheckCircle2 className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-navy">{title}</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {formatWhen(m.date_time)} · {m.court_location}
+                </p>
+                <p className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-navy">
+                  <span>
+                    {m.match_type === "rated" ? "Rated" : "Friendly"} · {statusLabel}
+                  </span>
+                  <FormatBadge format={(m as any).format} doublesStyle={(m as any).doubles_style} />
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
