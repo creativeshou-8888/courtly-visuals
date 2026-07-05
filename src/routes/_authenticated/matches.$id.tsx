@@ -20,6 +20,7 @@ import { AppShell } from "@/components/AppShell";
 import { ScoreEntry } from "@/components/ScoreEntry";
 import {
   acceptMatch,
+  addMatchGuest,
   cancelMatch,
   cancelDisputedMatch,
   confirmScore,
@@ -28,6 +29,7 @@ import {
   getMatch,
   joinDoublesMatch,
   listMatchParticipants,
+  removeMatchGuest,
   resubmitScore,
   submitScore,
   type ScoreSet,
