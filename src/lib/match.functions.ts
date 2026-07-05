@@ -521,7 +521,7 @@ export const listUpcomingMatches = createServerFn({ method: "GET" })
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
 
-    // Participant counts for doubles rows
+    // Participant + guest counts for doubles rows
     const doublesIds = collected.filter((r) => r.format === "doubles").map((r) => r.id);
     const countByMatch: Record<string, number> = {};
     if (doublesIds.length) {
@@ -531,6 +531,13 @@ export const listUpcomingMatches = createServerFn({ method: "GET" })
         .in("match_id", doublesIds);
       for (const p of (parts ?? []) as any[]) {
         countByMatch[p.match_id] = (countByMatch[p.match_id] ?? 0) + 1;
+      }
+      const { data: gs } = await (context.supabase as any)
+        .from("match_guests")
+        .select("match_id")
+        .in("match_id", doublesIds);
+      for (const g of (gs ?? []) as any[]) {
+        countByMatch[g.match_id] = (countByMatch[g.match_id] ?? 0) + 1;
       }
     }
 
