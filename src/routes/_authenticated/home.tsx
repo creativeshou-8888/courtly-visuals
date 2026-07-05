@@ -321,8 +321,9 @@ function RecentMatches() {
                       </span>
                     )}
                   </p>
-                  <p className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     <span>{when}</span>
+                    <FormatBadge format={m.format} />
                     {kudosPending && (
                       <span className="rounded-full bg-court px-2 py-0.5 text-navy">
                         Kudos pending
