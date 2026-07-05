@@ -42,6 +42,7 @@ function NewMatchPage() {
   const opponentIsRealUser = !!opponentId && UUID_RE.test(opponentId);
 
   const [mode, setMode] = useState<"open" | "direct">(opponentId ? "direct" : "open");
+  const [format, setFormat] = useState<"singles" | "doubles">("singles");
   const [matchType, setMatchType] = useState<"rated" | "friendly">("rated");
   const [dateTime, setDateTime] = useState<string>(localNowMinutes(60 * 24));
   const [court, setCourt] = useState<string>("");
