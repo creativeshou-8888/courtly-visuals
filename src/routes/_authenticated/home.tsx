@@ -93,7 +93,7 @@ function OutgoingInvites() {
                         {m.status === "open" ? "Open" : m.status === "invited" ? "Invited" : m.status}
                       </span>
                     </span>
-                    <FormatBadge format={(m as any).format} />
+                    <FormatBadge format={(m as any).format} doublesStyle={(m as any).doubles_style} />
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -153,7 +153,7 @@ function IncomingInvites() {
               </p>
               <p className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-court">
                 <span>{m.match_type === "rated" ? "Rated" : "Friendly"} · Invited you</span>
-                <FormatBadge format={(m as any).format} />
+                <FormatBadge format={(m as any).format} doublesStyle={(m as any).doubles_style} />
               </p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -203,7 +203,7 @@ function UpcomingMatches() {
                       ? "Ready to score"
                       : "Accepted"}
                 </span>
-                <FormatBadge format={(m as any).format} />
+                <FormatBadge format={(m as any).format} doublesStyle={(m as any).doubles_style} />
               </p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -323,7 +323,7 @@ function RecentMatches() {
                   </p>
                   <p className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     <span>{when}</span>
-                    <FormatBadge format={m.format} />
+                    <FormatBadge format={m.format} doublesStyle={(m as any).doubles_style} />
                     {kudosPending && (
                       <span className="rounded-full bg-court px-2 py-0.5 text-navy">
                         Kudos pending
