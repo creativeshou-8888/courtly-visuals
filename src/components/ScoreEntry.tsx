@@ -176,7 +176,7 @@ export function ScoreEntry({
           disabled={submitting || !canSubmit}
           className="rounded-full bg-court px-4 py-2.5 text-sm font-semibold text-navy disabled:opacity-60"
         >
-          {submitting ? "Submitting…" : "Submit score"}
+          {submitting ? "Submitting…" : submitLabel ?? "Submit score"}
         </button>
       </div>
     </section>
