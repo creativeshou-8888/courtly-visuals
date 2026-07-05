@@ -11,6 +11,7 @@ const createSchema = z
     court_location: z.string().trim().min(1).max(200),
     court_booked: z.boolean(),
     match_type: z.enum(["rated", "friendly"]),
+    format: z.enum(["singles", "doubles"]).default("singles"),
     desired_min_rating: z.number().int().min(0).max(4000).nullable(),
     desired_max_rating: z.number().int().min(0).max(4000).nullable(),
     message: z.string().trim().max(500).nullable(),
