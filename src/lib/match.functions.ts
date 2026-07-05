@@ -542,6 +542,7 @@ export const listMyRecentMatches = createServerFn({ method: "GET" })
         id: r.id,
         date_time: r.date_time,
         match_type: r.match_type,
+        format: (r.format ?? "singles") as MatchFormat,
         score_sets: r.score_sets ?? null,
         won: r.winner_id === context.userId,
         opponent: oppId ? profiles[oppId] ?? null : null,
