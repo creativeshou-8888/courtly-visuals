@@ -326,7 +326,7 @@ function NewMatchPage() {
 
         <button
           type="submit"
-          disabled={mutation.isPending}
+          disabled={mutation.isPending || isDoubles}
           className="w-full rounded-full bg-court px-5 py-3.5 text-sm font-semibold text-navy transition-transform active:scale-[0.98] disabled:opacity-60"
         >
           {mutation.isPending ? "Creating…" : primaryLabel}
