@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      match_guests: {
+        Row: {
+          added_by: string
+          created_at: string
+          guest_name: string
+          id: string
+          match_id: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          guest_name: string
+          id?: string
+          match_id: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          guest_name?: string
+          id?: string
+          match_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_guests_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_participants: {
         Row: {
           created_at: string
@@ -381,6 +413,22 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      add_match_guest: {
+        Args: { _match_id: string; _name: string }
+        Returns: {
+          added_by: string
+          created_at: string
+          guest_name: string
+          id: string
+          match_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "match_guests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_disputed_match: {
         Args: { _id: string }
         Returns: {
@@ -692,6 +740,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      remove_match_guest: { Args: { _guest_id: string }; Returns: undefined }
       resubmit_score: {
         Args: { _id: string; _sets: Json; _winner_id: string }
         Returns: {
