@@ -776,6 +776,73 @@ function MatchDetail() {
         </div>
       )}
 
+      {guestDialogOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-3xl border border-border bg-background p-5">
+            <h3 className="font-display text-base font-semibold text-navy">Fill this open spot</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Leave it open so a Courtly player can join, or add a friend who doesn't have a Courtly account.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setGuestDialogOpen(false);
+                setGuestName("");
+              }}
+              className="mt-4 w-full rounded-2xl border border-border bg-card p-3 text-left text-sm font-semibold text-navy hover:bg-secondary"
+            >
+              Leave open for Courtly players
+              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                Anyone at the right level can join this spot.
+              </span>
+            </button>
+
+            <div className="mt-3 rounded-2xl border border-border bg-card p-3">
+              <label htmlFor="guest-name" className="text-sm font-semibold text-navy">
+                Add a friend without a Courtly account
+              </label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                No email or phone needed. They'll show up as a guest — no rating, no leaderboard, no kudos.
+              </p>
+              <input
+                id="guest-name"
+                type="text"
+                autoFocus
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                maxLength={40}
+                placeholder="Name or nickname"
+                className="mt-3 w-full rounded-full border border-border bg-background px-4 py-2 text-sm text-navy placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-court"
+              />
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuestDialogOpen(false);
+                    setGuestName("");
+                  }}
+                  disabled={addGuestMutation.isPending}
+                  className="rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold text-navy disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    addGuestMutation.mutate({ data: { match_id: id, name: guestName.trim() } })
+                  }
+                  disabled={addGuestMutation.isPending || guestName.trim().length === 0}
+                  className="rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                >
+                  {addGuestMutation.isPending ? "Adding…" : "Add guest"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
 
       {canAcceptOpen && (
