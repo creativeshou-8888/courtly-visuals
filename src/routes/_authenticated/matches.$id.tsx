@@ -188,6 +188,24 @@ function MatchDetail() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not dispute"),
   });
+  const resubmitMutation = useMutation({
+    mutationFn: resubmit,
+    onSuccess: () => {
+      toast.success("Score resubmitted — waiting for opponent confirmation");
+      setEditOpen(false);
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not resubmit score"),
+  });
+  const cancelDisputedMutation = useMutation({
+    mutationFn: cancelDisputed,
+    onSuccess: () => {
+      toast.success("Match cancelled");
+      setConfirmCancelOpen(false);
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not cancel match"),
+  });
   const feedbackMutation = useMutation({
     mutationFn: sendFeedback,
     onSuccess: () => {
