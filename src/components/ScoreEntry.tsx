@@ -10,19 +10,35 @@ export function ScoreEntry({
   submitting,
   onCancel,
   onSubmit,
+  initialWinnerId,
+  initialSets,
+  submitLabel,
 }: {
   creator: Player;
   opponent: Player;
   submitting: boolean;
   onCancel: () => void;
   onSubmit: (winnerId: string, sets: ScoreSet[]) => void;
+  initialWinnerId?: string;
+  initialSets?: ScoreSet[];
+  submitLabel?: string;
 }) {
-  const [winnerId, setWinnerId] = useState<string>("");
-  const [sets, setSets] = useState<SetInput[]>([
-    { a: "", b: "" },
-    { a: "", b: "" },
-  ]);
-  const [thirdSet, setThirdSet] = useState(false);
+  const [winnerId, setWinnerId] = useState<string>(initialWinnerId ?? "");
+  const initialInputs: SetInput[] = (() => {
+    const base: SetInput[] = [
+      { a: "", b: "" },
+      { a: "", b: "" },
+      { a: "", b: "" },
+    ];
+    if (initialSets && initialSets.length) {
+      for (let i = 0; i < Math.min(initialSets.length, 3); i++) {
+        base[i] = { a: String(initialSets[i].a), b: String(initialSets[i].b) };
+      }
+    }
+    return base;
+  })();
+  const [sets, setSets] = useState<SetInput[]>(initialInputs);
+  const [thirdSet, setThirdSet] = useState(!!(initialSets && initialSets.length === 3));
   const [error, setError] = useState<string | null>(null);
 
   const activeSets = thirdSet ? sets : sets.slice(0, 2);
