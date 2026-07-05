@@ -112,7 +112,7 @@ function OpenInvitesNearMe() {
         </div>
       ) : (
         <div className="rounded-3xl border border-border bg-card">
-          {invites.map((m, i) => (
+          {invites.map((m: any, i: number) => (
             <Link
               key={m.id}
               to="/matches/$id"
@@ -125,14 +125,16 @@ function OpenInvitesNearMe() {
                 className="h-11 w-11 rounded-full object-cover"
               />
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-navy">
-                  {m.creator?.name ?? "Player"}
-                  {m.creator?.current_rating != null && (
-                    <span className="ml-1 text-xs font-medium text-muted-foreground">
-                      · {m.creator.current_rating}
-                    </span>
-                  )}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-navy">
+                    {m.creator?.name ?? "Player"}
+                    {m.creator?.current_rating != null && (
+                      <span className="ml-1 text-xs font-medium text-muted-foreground">
+                        · {m.creator.current_rating}
+                      </span>
+                    )}
+                  </p>
+                </div>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
                   {formatWhen(m.date_time)} · {m.court_location}
                 </p>
@@ -153,6 +155,7 @@ function OpenInvitesNearMe() {
                   View invite <ChevronRight className="h-3 w-3" />
                 </p>
               </div>
+              <FormatBadge format={m.format} size="md" prominent />
             </Link>
           ))}
         </div>
