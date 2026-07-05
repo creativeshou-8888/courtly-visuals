@@ -333,18 +333,47 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
       .from("matches")
       .select("*")
       .eq("status", "open")
-      .is("opponent_id", null)
       .neq("creator_id", context.userId)
       .gt("date_time", nowIso)
       .order("date_time", { ascending: true });
     if (error) throw new Error(error.message);
-    const rows = (data ?? []) as MatchRow[];
+    const allRows = (data ?? []) as MatchRow[];
 
+    // Singles opens: opponent_id must be null. Doubles opens: partner_id may be set.
+    const rows = allRows.filter(
+      (r) => (r.format === "doubles") || r.opponent_id == null,
+    );
+
+    // Fetch participant counts + my membership for doubles rows
+    const doublesIds = rows.filter((r) => r.format === "doubles").map((r) => r.id);
+    const countByMatch: Record<string, number> = {};
+    const myJoined = new Set<string>();
+    if (doublesIds.length) {
+      const { data: parts } = await (context.supabase as any)
+        .from("match_participants")
+        .select("match_id,user_id")
+        .in("match_id", doublesIds);
+      for (const p of (parts ?? []) as any[]) {
+        countByMatch[p.match_id] = (countByMatch[p.match_id] ?? 0) + 1;
+        if (p.user_id === context.userId) myJoined.add(p.match_id);
+      }
+    }
+
+    // Exclude doubles matches I've already joined, or that are full
+    const notJoinedFull = rows.filter((r) => {
+      if (r.format !== "doubles") return true;
+      if (myJoined.has(r.id)) return false;
+      const joined = countByMatch[r.id] ?? 0;
+      return joined < r.max_players;
+    });
+
+    // Apply rating filter to singles only (doubles rating rules TBD)
     const filtered = myRating == null
-      ? rows
-      : rows.filter((r) =>
-          (r.desired_min_rating == null || myRating >= r.desired_min_rating) &&
-          (r.desired_max_rating == null || myRating <= r.desired_max_rating),
+      ? notJoinedFull
+      : notJoinedFull.filter((r) =>
+          r.format === "doubles" ||
+          ((r.desired_min_rating == null || myRating >= r.desired_min_rating) &&
+            (r.desired_max_rating == null || myRating <= r.desired_max_rating)),
         );
 
     const creatorIds = Array.from(new Set(filtered.map((r) => r.creator_id)));
@@ -356,7 +385,11 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
         .in("id", creatorIds);
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
-    return filtered.map((r) => ({ ...r, creator: profiles[r.creator_id] ?? null }));
+    return filtered.map((r) => ({
+      ...r,
+      creator: profiles[r.creator_id] ?? null,
+      joined_count: r.format === "doubles" ? (countByMatch[r.id] ?? 0) : null,
+    }));
   });
 
 export const listIncomingInvites = createServerFn({ method: "GET" })
