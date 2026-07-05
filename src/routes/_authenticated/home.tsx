@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/PlayerBits";
+import { FormatBadge } from "@/components/FormatBadge";
 import { recentResults } from "@/lib/mock-data";
 import { useCurrentProfile, initialsAvatar } from "@/hooks/use-current-profile";
 import { useSkippedKudos } from "@/lib/kudos-skipped";
