@@ -105,7 +105,11 @@ function MatchDetail() {
   const submit = useServerFn(submitScore);
   const confirm = useServerFn(confirmScore);
   const dispute = useServerFn(disputeScore);
+  const resubmit = useServerFn(resubmitScore);
+  const cancelDisputed = useServerFn(cancelDisputedMatch);
   const [scoreOpen, setScoreOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackSkipped, setFeedbackSkipped] = useState(false);
 
