@@ -21,10 +21,12 @@ import { ScoreEntry } from "@/components/ScoreEntry";
 import {
   acceptMatch,
   cancelMatch,
+  cancelDisputedMatch,
   confirmScore,
   declineMatch,
   disputeScore,
   getMatch,
+  resubmitScore,
   submitScore,
   type ScoreSet,
 } from "@/lib/match.functions";
