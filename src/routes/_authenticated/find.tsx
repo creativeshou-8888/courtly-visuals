@@ -45,7 +45,15 @@ function OpenInvitesNearMe() {
     staleTime: 15_000,
     retry: 1,
   });
-  const invites = data ?? [];
+  const [formatFilter, setFormatFilter] = useState<"all" | "singles" | "doubles">("all");
+  const allInvites = data ?? [];
+  const invites = useMemo(
+    () =>
+      formatFilter === "all"
+        ? allInvites
+        : allInvites.filter((m: any) => normalizeFormat(m.format) === formatFilter),
+    [allInvites, formatFilter],
+  );
 
 
   return (
