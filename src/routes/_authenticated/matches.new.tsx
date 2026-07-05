@@ -363,6 +363,9 @@ function NewMatchPage() {
                   />
                 )}
                 <SlotList slots={slotsPreview} />
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Playing with a friend who isn't on Courtly? You can add their name after creating the match.
+                </p>
               </div>
             )}
 

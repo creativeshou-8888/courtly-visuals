@@ -71,7 +71,7 @@ const statusLabels: Record<string, string> = {
   voided: "Voided",
 };
 
-function StatusPill({ status }: { status: string }) {
+function StatusPill({ status, overrideLabel }: { status: string; overrideLabel?: string }) {
   const isLive = status === "open" || status === "invited";
   const isAccepted = status === "accepted";
   const cls = isAccepted
@@ -83,7 +83,7 @@ function StatusPill({ status }: { status: string }) {
     <span
       className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${cls}`}
     >
-      {statusLabels[status] ?? status}
+      {overrideLabel ?? statusLabels[status] ?? status}
     </span>
   );
 }
@@ -360,18 +360,20 @@ function MatchDetail() {
                   ? "Score awaiting confirmation"
                   : isDisputed
                     ? "Score disputed"
-                    : isAccepted
-                      ? "Match accepted"
-                      : match.opponent_id
-                        ? "Match invite"
-                        : "Open invite"}
+                    : isDoubles && isFull
+                      ? "Match confirmed"
+                      : isAccepted
+                        ? "Match accepted"
+                        : match.opponent_id
+                          ? "Match invite"
+                          : "Open invite"}
             </h1>
             <p className="mt-1 inline-flex flex-wrap items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
               <span>{match.match_type === "rated" ? "Rated match" : "Friendly match"}</span>
               <FormatBadge format={(match as any).format} doublesStyle={(match as any).doubles_style} />
             </p>
           </div>
-          <StatusPill status={match.status} />
+          <StatusPill status={match.status} overrideLabel={isDoubles && isFull ? "Match full" : undefined} />
         </div>
 
         <div className="mt-5 space-y-3">
@@ -594,17 +596,25 @@ function MatchDetail() {
       )}
 
       {isDoubles && isFull && !isConfirmed && (
-        <section className="mt-4 rounded-3xl border border-dashed border-court/50 bg-court/10 p-5">
-          <p className="text-sm font-semibold text-navy">Match full — {joinedCount}/{maxPlayers} players</p>
+        <section className="mt-4 rounded-3xl border border-court/40 bg-court/10 p-5">
+          <div className="flex items-center gap-2 text-navy">
+            <CheckCircle2 className="h-4 w-4" />
+            <p className="text-sm font-semibold">Match confirmed</p>
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Doubles scoring coming next. You'll be able to enter the result here in an upcoming update.
+            All player spots are filled — {joinedCount}/{maxPlayers} players.
           </p>
+          {isPastScheduled && (
+            <p className="mt-3 rounded-2xl border border-dashed border-border bg-background/70 p-3 text-xs text-muted-foreground">
+              Doubles scoring coming next. You'll be able to enter the result here in an upcoming update.
+            </p>
+          )}
         </section>
       )}
 
 
 
-      {isAccepted && (
+      {isAccepted && !isDoubles && (
         <>
           {canEnterScore ? (
             !scoreOpen ? (
@@ -792,7 +802,7 @@ function MatchDetail() {
               }}
               className="mt-4 w-full rounded-2xl border border-border bg-card p-3 text-left text-sm font-semibold text-navy hover:bg-secondary"
             >
-              Leave open for Courtly players
+              Keep open for Courtly players
               <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                 Anyone at the right level can join this spot.
               </span>
