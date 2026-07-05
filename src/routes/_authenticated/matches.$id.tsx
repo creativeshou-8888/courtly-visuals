@@ -802,7 +802,7 @@ function MatchDetail() {
               }}
               className="mt-4 w-full rounded-2xl border border-border bg-card p-3 text-left text-sm font-semibold text-navy hover:bg-secondary"
             >
-              Leave open for Courtly players
+              Keep open for Courtly players
               <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
                 Anyone at the right level can join this spot.
               </span>
