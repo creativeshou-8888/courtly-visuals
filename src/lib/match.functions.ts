@@ -480,6 +480,7 @@ export type RecentMatch = {
   id: string;
   date_time: string;
   match_type: "rated" | "friendly";
+  format: MatchFormat;
   score_sets: ScoreSet[] | null;
   won: boolean;
   opponent: { id: string; name: string; photo_url: string | null } | null;
