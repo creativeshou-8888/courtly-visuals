@@ -357,6 +357,28 @@ export const disputeScore = createServerFn({ method: "POST" })
     return row as MatchRow;
   });
 
+export const resubmitScore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => submitSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("resubmit_score", {
+      _id: data.id,
+      _winner_id: data.winner_id,
+      _sets: data.sets,
+    });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+
+export const cancelDisputedMatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await (context.supabase as any).rpc("cancel_disputed_match", { _id: data.id });
+    if (error) throw new Error(error.message);
+    return row as MatchRow;
+  });
+
 export type LeaderboardEntry = {
   id: string;
   name: string;

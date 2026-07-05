@@ -21,10 +21,12 @@ import { ScoreEntry } from "@/components/ScoreEntry";
 import {
   acceptMatch,
   cancelMatch,
+  cancelDisputedMatch,
   confirmScore,
   declineMatch,
   disputeScore,
   getMatch,
+  resubmitScore,
   submitScore,
   type ScoreSet,
 } from "@/lib/match.functions";
@@ -103,7 +105,11 @@ function MatchDetail() {
   const submit = useServerFn(submitScore);
   const confirm = useServerFn(confirmScore);
   const dispute = useServerFn(disputeScore);
+  const resubmit = useServerFn(resubmitScore);
+  const cancelDisputed = useServerFn(cancelDisputedMatch);
   const [scoreOpen, setScoreOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackSkipped, setFeedbackSkipped] = useState(false);
 
@@ -182,6 +188,24 @@ function MatchDetail() {
     },
     onError: (e: any) => toast.error(e?.message ?? "Could not dispute"),
   });
+  const resubmitMutation = useMutation({
+    mutationFn: resubmit,
+    onSuccess: () => {
+      toast.success("Score resubmitted — waiting for opponent confirmation");
+      setEditOpen(false);
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not resubmit score"),
+  });
+  const cancelDisputedMutation = useMutation({
+    mutationFn: cancelDisputed,
+    onSuccess: () => {
+      toast.success("Match cancelled");
+      setConfirmCancelOpen(false);
+      invalidateAll();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not cancel match"),
+  });
   const feedbackMutation = useMutation({
     mutationFn: sendFeedback,
     onSuccess: () => {
@@ -235,8 +259,9 @@ function MatchDetail() {
   const isConfirmed = match.status === "confirmed";
   const isDisputed = match.status === "disputed";
   const canEnterScore = isAccepted && isPastScheduled && match.opponent_id != null;
-  const isSubmitter = isPending && match.submitted_by === currentUserId;
+  const isSubmitter = (isPending || isDisputed) && match.submitted_by === currentUserId;
   const canConfirmOrDispute = isPending && !isSubmitter;
+  const canResolveDispute = isDisputed && isSubmitter;
 
   const winnerName =
     match.winner_id === match.creator_id
@@ -484,8 +509,79 @@ function MatchDetail() {
           <p className="mt-1 text-xs text-muted-foreground">
             The submitted score is held for review. Ratings won't change until this is resolved.
           </p>
+
+          {canResolveDispute && !editOpen && (
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                onClick={() => setEditOpen(true)}
+                disabled={resubmitMutation.isPending || cancelDisputedMutation.isPending}
+                className="rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <ClipboardEdit className="h-3.5 w-3.5" />
+                  Edit & resubmit score
+                </span>
+              </button>
+              <button
+                onClick={() => setConfirmCancelOpen(true)}
+                disabled={resubmitMutation.isPending || cancelDisputedMutation.isPending}
+                className="rounded-full border border-destructive/40 bg-background px-4 py-2.5 text-sm font-semibold text-destructive disabled:opacity-60"
+              >
+                Cancel match
+              </button>
+            </div>
+          )}
+
+          {isDisputed && !isSubmitter && (
+            <p className="mt-4 rounded-2xl bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+              Waiting for {(viewerIsCreator ? opponent?.name : creator?.name) ?? "your opponent"} to edit &amp; resubmit the score or cancel the match.
+            </p>
+          )}
         </section>
       )}
+
+      {canResolveDispute && editOpen && creator && opponent && (
+        <ScoreEntry
+          creator={{ id: creator.id, name: creator.name }}
+          opponent={{ id: opponent.id, name: opponent.name }}
+          submitting={resubmitMutation.isPending}
+          initialWinnerId={match.winner_id ?? undefined}
+          initialSets={sets.length ? sets : undefined}
+          submitLabel="Resubmit score"
+          onCancel={() => setEditOpen(false)}
+          onSubmit={(winnerId, newSets) =>
+            resubmitMutation.mutate({ data: { id, winner_id: winnerId, sets: newSets } })
+          }
+        />
+      )}
+
+      {confirmCancelOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-3xl border border-border bg-background p-5">
+            <h3 className="font-display text-base font-semibold text-navy">Cancel this match?</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This match will be marked cancelled. No ratings, wins, losses, provisional progress, leaderboard, community result, or kudos will be recorded. This cannot be undone.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setConfirmCancelOpen(false)}
+                disabled={cancelDisputedMutation.isPending}
+                className="rounded-full border border-border bg-background px-4 py-2.5 text-sm font-semibold text-navy disabled:opacity-60"
+              >
+                Keep match
+              </button>
+              <button
+                onClick={() => cancelDisputedMutation.mutate({ data: { id } })}
+                disabled={cancelDisputedMutation.isPending}
+                className="rounded-full bg-destructive px-4 py-2.5 text-sm font-semibold text-destructive-foreground disabled:opacity-60"
+              >
+                {cancelDisputedMutation.isPending ? "Cancelling…" : "Cancel match"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
 
       {canAcceptOpen && (
