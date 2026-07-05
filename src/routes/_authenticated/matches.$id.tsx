@@ -71,7 +71,7 @@ const statusLabels: Record<string, string> = {
   voided: "Voided",
 };
 
-function StatusPill({ status }: { status: string }) {
+function StatusPill({ status, overrideLabel }: { status: string; overrideLabel?: string }) {
   const isLive = status === "open" || status === "invited";
   const isAccepted = status === "accepted";
   const cls = isAccepted
@@ -83,7 +83,7 @@ function StatusPill({ status }: { status: string }) {
     <span
       className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${cls}`}
     >
-      {statusLabels[status] ?? status}
+      {overrideLabel ?? statusLabels[status] ?? status}
     </span>
   );
 }
