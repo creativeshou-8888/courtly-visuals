@@ -342,28 +342,69 @@ function MatchDetail() {
         </div>
 
         <div className="mt-5 space-y-3">
-          {creator && <PersonRow label="Creator" name={creator.name} photo={creator.photo_url} />}
-          {match.opponent_id ? (
-            opponent ? (
-              <PersonRow label="Opponent" name={opponent.name} photo={opponent.photo_url} />
-            ) : (
-              <PersonRow label="Opponent" name="Player" photo={null} />
-            )
-          ) : (
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-navy">
-                <UserIcon className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Opponent</p>
-                <p className="text-sm font-semibold text-navy">
-                  Any player
-                  {match.desired_min_rating != null && match.desired_max_rating != null
-                    ? ` · ${match.desired_min_rating}–${match.desired_max_rating}`
-                    : ""}
-                </p>
+          {isDoubles ? (
+            <>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Players · {joinedCount}/{maxPlayers}
+                {remainingSpots > 0 && match.status === "open" && (
+                  <span className="ml-2 text-court">{remainingSpots} {remainingSpots === 1 ? "spot" : "spots"} left</span>
+                )}
+              </p>
+              <div className="space-y-2">
+                {partsList.map((p, i) => (
+                  <div key={p.user_id} className="flex items-center gap-3 rounded-2xl border border-navy/20 bg-navy/5 p-2.5">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-navy">
+                      {i + 1}
+                    </span>
+                    <img
+                      src={p.profile?.photo_url || initialsAvatar(p.profile?.name || "Player")}
+                      alt=""
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                    <p className="min-w-0 flex-1 truncate text-sm font-semibold text-navy">
+                      {p.profile?.name ?? "Player"}
+                      {p.user_id === match.creator_id && (
+                        <span className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">· host</span>
+                      )}
+                    </p>
+                  </div>
+                ))}
+                {Array.from({ length: remainingSpots }).map((_, i) => (
+                  <div key={`empty-${i}`} className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-background p-2.5">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-muted-foreground">
+                      {joinedCount + i + 1}
+                    </span>
+                    <p className="text-sm text-muted-foreground">Open spot</p>
+                  </div>
+                ))}
               </div>
-            </div>
+            </>
+          ) : (
+            <>
+              {creator && <PersonRow label="Creator" name={creator.name} photo={creator.photo_url} />}
+              {match.opponent_id ? (
+                opponent ? (
+                  <PersonRow label="Opponent" name={opponent.name} photo={opponent.photo_url} />
+                ) : (
+                  <PersonRow label="Opponent" name="Player" photo={null} />
+                )
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-secondary text-navy">
+                    <UserIcon className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Opponent</p>
+                    <p className="text-sm font-semibold text-navy">
+                      Any player
+                      {match.desired_min_rating != null && match.desired_max_rating != null
+                        ? ` · ${match.desired_min_rating}–${match.desired_max_rating}`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
