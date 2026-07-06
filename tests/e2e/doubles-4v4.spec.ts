@@ -29,6 +29,13 @@ const COURT = process.env.E2E_COURT_LABEL ?? "E2E Test Court";
 
 const ALL = [HOST, P1, P2, P3, OUTSIDER];
 const MISSING = ALL.some((c) => c === null);
+const REQUIRE_SECRETS = process.env.E2E_REQUIRE_SECRETS === "true";
+
+if (MISSING && REQUIRE_SECRETS) {
+  throw new Error(
+    "E2E_REQUIRE_SECRETS=true but one or more E2E_HOST_*, E2E_P1_*, E2E_P2_*, E2E_P3_*, E2E_OUTSIDER_* env vars are missing. See tests/e2e/README.md.",
+  );
+}
 
 test.describe("Standard Doubles 4/4 visibility", () => {
   test.skip(

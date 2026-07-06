@@ -25,6 +25,11 @@ jobs:
       E2E_P3_PASSWORD: ${{ secrets.E2E_P3_PASSWORD }}
       E2E_OUTSIDER_EMAIL: ${{ secrets.E2E_OUTSIDER_EMAIL }}
       E2E_OUTSIDER_PASSWORD: ${{ secrets.E2E_OUTSIDER_PASSWORD }}
+      # For trusted runs (pushes and same-repo PRs) require the secrets to
+      # be present so a misconfigured environment fails loudly instead of
+      # silently self-skipping. Fork PRs don't have access to secrets, so
+      # they continue to self-skip.
+      E2E_REQUIRE_SECRETS: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && 'true' || 'false' }}
       E2E_COURT_LABEL: CI Doubles Regression
       E2E_BASE_URL: http://localhost:8080
 
