@@ -290,7 +290,7 @@ function MatchDetail() {
     );
   }
 
-  const { match, creator, opponent, viewerIsCreator } = data;
+  const { match, creator, opponent, viewerIsCreator, viewerWithinRatingRange } = data;
   const when = new Date(match.date_time).toLocaleString(undefined, {
     weekday: "short",
     month: "short",
@@ -318,7 +318,18 @@ function MatchDetail() {
   const isFull = isDoubles && joinedCount >= maxPlayers;
   const canManageGuests = isDoubles && viewerIsCreator && doublesStyle === "standard" && (match.status === "open" || match.status === "accepted");
   const canCancel = viewerIsCreator && (match.status === "open" || match.status === "invited");
-  const canAcceptOpen = !isDoubles && !viewerIsCreator && match.status === "open" && isFuture;
+  const canAcceptOpen =
+    !isDoubles &&
+    !viewerIsCreator &&
+    match.status === "open" &&
+    isFuture &&
+    viewerWithinRatingRange;
+  const openSinglesOutsideRating =
+    !isDoubles &&
+    !viewerIsCreator &&
+    match.status === "open" &&
+    isFuture &&
+    !viewerWithinRatingRange;
   const canRespondDirect = !isDoubles && !viewerIsCreator && match.status === "invited" && isFuture;
   const isAccepted = match.status === "accepted";
   const isPending = match.status === "score_pending";
@@ -879,6 +890,18 @@ function MatchDetail() {
         </section>
       )}
 
+      {openSinglesOutsideRating && (
+        <section className="mt-4 rounded-3xl border border-border bg-secondary/40 p-5">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <ShieldCheck className="h-4 w-4" />
+            <p className="text-sm font-semibold">Outside your rating range</p>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            The host limited this Singles invite to a different rating range, so it cannot be accepted.
+          </p>
+        </section>
+      )}
+
       {canRespondDirect && (
         <section className="mt-4 rounded-3xl border border-border bg-card p-5">
           <div className="flex items-center gap-2 text-navy">
@@ -1015,4 +1038,3 @@ function KudosBlock({
     </div>
   );
 }
-

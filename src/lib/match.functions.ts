@@ -239,18 +239,28 @@ export const searchPlayers = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => z.object({ query: z.string().trim().max(80).default("") }).parse(input))
   .handler(async ({ context, data }) => {
     let q = (context.supabase as any)
-      .from("profiles")
-      .select("id,name,photo_url,current_rating")
+      .from("public_profiles")
+      .select("id,name,photo_url,current_rating,provisional,wins,losses,preferred_courts,availability")
       .eq("onboarded", true)
       .neq("id", context.userId)
       .order("name", { ascending: true })
-      .limit(10);
+      .limit(100);
     if (data.query.length > 0) {
       q = q.ilike("name", `%${data.query.replace(/[%_]/g, "")}%`);
     }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return (rows ?? []) as { id: string; name: string; photo_url: string | null; current_rating: number | null }[];
+    return (rows ?? []) as {
+      id: string;
+      name: string;
+      photo_url: string | null;
+      current_rating: number | null;
+      provisional: boolean;
+      wins: number;
+      losses: number;
+      preferred_courts: string[];
+      availability: string[];
+    }[];
   });
 
 export const getMatch = createServerFn({ method: "GET" })
@@ -274,11 +284,26 @@ export const getMatch = createServerFn({ method: "GET" })
         .in("id", ids);
       for (const p of (profs ?? []) as any[]) profiles[p.id] = p;
     }
+    let viewerWithinRatingRange = true;
+    if (row.format === "singles" && row.status === "open" && row.opponent_id == null) {
+      const { data: viewer } = await (context.supabase as any)
+        .from("profiles")
+        .select("current_rating")
+        .eq("id", context.userId)
+        .maybeSingle();
+      const rating = viewer?.current_rating ?? null;
+      viewerWithinRatingRange =
+        (row.desired_min_rating == null && row.desired_max_rating == null) ||
+        (rating != null &&
+          (row.desired_min_rating == null || rating >= row.desired_min_rating) &&
+          (row.desired_max_rating == null || rating <= row.desired_max_rating));
+    }
     return {
       match: row as MatchRow,
       creator: profiles[row.creator_id] ?? null,
       opponent: row.opponent_id ? profiles[row.opponent_id] ?? null : null,
       viewerIsCreator: row.creator_id === context.userId,
+      viewerWithinRatingRange,
     };
   });
 
@@ -405,15 +430,6 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
       return joined < r.max_players;
     });
 
-    // Apply rating filter to singles only (doubles rating rules TBD)
-    const filtered = myRating == null
-      ? notFull
-      : notFull.filter((r) =>
-          r.format === "doubles" ||
-          ((r.desired_min_rating == null || myRating >= r.desired_min_rating) &&
-            (r.desired_max_rating == null || myRating <= r.desired_max_rating)),
-        );
-
     // Guest counts for doubles rows
     const guestCountByMatch: Record<string, number> = {};
     if (doublesIds.length) {
@@ -426,7 +442,7 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
       }
     }
     // Re-filter using players + guests
-    const notFull2 = filtered.filter((r) => {
+    const notFull2 = notFull.filter((r) => {
       if (r.format !== "doubles") return true;
       const joined = (countByMatch[r.id] ?? 0) + (guestCountByMatch[r.id] ?? 0);
       return joined < r.max_players;
@@ -449,6 +465,13 @@ export const listOpenInvitesForMe = createServerFn({ method: "GET" })
           ? (countByMatch[r.id] ?? 0) + (guestCountByMatch[r.id] ?? 0)
           : null,
       viewer_joined: r.format === "doubles" ? myJoined.has(r.id) : false,
+      viewer_within_rating_range:
+        r.format === "doubles"
+          ? true
+          : (r.desired_min_rating == null && r.desired_max_rating == null) ||
+            (myRating != null &&
+              (r.desired_min_rating == null || myRating >= r.desired_min_rating) &&
+              (r.desired_max_rating == null || myRating <= r.desired_max_rating)),
     }));
   });
 
@@ -777,5 +800,3 @@ export const listMyRecentMatches = createServerFn({ method: "GET" })
       } satisfies RecentMatch;
     });
   });
-
-
