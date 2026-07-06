@@ -58,6 +58,17 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: bunx playwright install-deps chromium
 
+      - name: Preflight — verify Chromium is installed
+        run: |
+          set -e
+          CHROME=$(find ~/.cache/ms-playwright -maxdepth 2 -type f -path '*/chromium-*/chrome-linux/chrome' | head -n 1)
+          if [ -z "$CHROME" ]; then
+            echo "❌ Playwright Chromium is not installed."
+            echo "   Run 'bunx playwright install --with-deps chromium' locally (or in CI)."
+            exit 1
+          fi
+          echo "✅ Chromium found: $CHROME"
+
       - name: Start dev server
         run: |
           bun run dev > /tmp/dev-server.log 2>&1 &
